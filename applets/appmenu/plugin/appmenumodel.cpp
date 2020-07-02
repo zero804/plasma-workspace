@@ -29,6 +29,12 @@
 #include <QDBusConnectionInterface>
 #include <QDBusServiceWatcher>
 #include <QGuiApplication>
+#include <QWidgetAction>
+#include <QDebug>
+#include <KLocalizedString>
+
+#include <QLineEdit>
+#include <QListView>
 
 #include <dbusmenuimporter.h>
 #include <abstracttasksmodel.h>
@@ -82,6 +88,37 @@ AppMenuModel::AppMenuModel(QObject *parent)
             emit modelNeedsUpdate();
         }
     });
+
+    // X11 has funky menu behaviour that prevents this from working properly.
+    if (KWindowSystem::isPlatformWayland()) {
+        m_searchAction = new QAction(this);
+        m_searchAction->setText(i18n("Search"));
+        m_searchAction->setObjectName(QStringLiteral("appmenu"));
+
+        auto searchMenu = new QMenu;
+        auto searchAction = new QWidgetAction(this);
+        auto searchBar = new QLineEdit;
+        searchBar->setPlaceholderText(i18n("Search..."));
+        searchBar->setMinimumWidth(200);
+        connect(m_tasksModel, &TaskManager::TasksModel::activeTaskChanged, [=]() {
+            searchBar->setText("");
+        });
+        connect(searchBar, &QLineEdit::textChanged, [=]() mutable {
+            insertSearchActionsIntoMenu(searchBar->text());
+        });
+        connect(searchBar, &QLineEdit::returnPressed, [=]() mutable {
+            if (m_currentSearchActions.first()) {
+                m_currentSearchActions.first()->trigger();
+            }
+        });
+        connect(this, &AppMenuModel::modelNeedsUpdate, this, [this, searchBar]() mutable {
+            insertSearchActionsIntoMenu(searchBar->text());
+        });
+        searchAction->setDefaultWidget(searchBar);
+        searchMenu->addAction(searchAction);
+        searchMenu->addSeparator();
+        m_searchAction->setMenu(searchMenu);
+    }
 }
 
 AppMenuModel::~AppMenuModel() = default;
@@ -130,7 +167,30 @@ int AppMenuModel::rowCount(const QModelIndex &parent) const
         return 0;
     }
 
-    return m_menu->actions().count();
+    return m_menu->actions().count()+(KWindowSystem::isPlatformWayland() ? 1 : 0);
+}
+
+void AppMenuModel::removeSearchActionsFromMenu()
+{
+    for (const auto &action: m_currentSearchActions) {
+        m_searchAction->menu()->removeAction(action);
+    }
+    m_currentSearchActions = QList<QAction*>();
+}
+
+void AppMenuModel::insertSearchActionsIntoMenu(const QString &filter)
+{
+    removeSearchActionsFromMenu();
+    if (filter.isEmpty()) {
+        return;
+    }
+    const auto actions = flatActionList();
+    for (const auto &action: actions) {
+        if (action->text().contains(filter, Qt::CaseInsensitive)) {
+            m_searchAction->menu()->addAction(action);
+            m_currentSearchActions << action;
+        }
+    }
 }
 
 void AppMenuModel::update()
@@ -165,6 +225,21 @@ QHash<int, QByteArray> AppMenuModel::roleNames() const
     return roleNames;
 }
 
+QList<QAction*> AppMenuModel::flatActionList()
+{
+    QList<QAction*> ret;
+    if (!m_menuAvailable || !m_menu) {
+        return ret;
+    }
+    const auto actions = m_menu->findChildren<QAction*>();
+    for (auto &action: actions) {
+        if (action->menu() == nullptr) {
+            ret << action;
+        }
+    }
+    return ret;
+}
+
 QVariant AppMenuModel::data(const QModelIndex &index, int role) const
 {
     const int row = index.row();
@@ -173,6 +248,13 @@ QVariant AppMenuModel::data(const QModelIndex &index, int role) const
     }
 
     const auto actions = m_menu->actions();
+    if (row == actions.count() && KWindowSystem::isPlatformWayland()) {
+        if (role == MenuRole) {
+            return m_searchAction->text();
+        } else if (role == ActionRole) {
+            return QVariant::fromValue((void*)m_searchAction);
+        }
+    }
     if (row >= actions.count()) {
         return QVariant();
     }

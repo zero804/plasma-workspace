@@ -22,6 +22,7 @@
 #ifndef APPMENUMODEL_H
 #define APPMENUMODEL_H
 
+#include <QAction>
 #include <QAbstractListModel>
 #include <QStringList>
 #include <KWindowSystem>
@@ -65,9 +66,11 @@ public:
 
     QRect screenGeometry() const;
     void setScreenGeometry(QRect geometry);
+    QList<QAction*> flatActionList();
 
 signals:
     void requestActivateIndex(int index);
+    void bringToFocus(int index);
 
 private Q_SLOTS:
     void onActiveWindowChanged();
@@ -93,6 +96,11 @@ private:
     WId m_delayedMenuWindowId = 0;
 
     QPointer<QMenu> m_menu;
+    QPointer<QAction> m_searchAction;
+    QList<QAction*> m_currentSearchActions;
+
+    void removeSearchActionsFromMenu();
+    void insertSearchActionsIntoMenu(const QString &filter = QString());
 
     QDBusServiceWatcher *m_serviceWatcher;
     QString m_serviceName;

@@ -109,6 +109,11 @@ Item {
             Layout.fillHeight: !root.vertical
         }
 
+        Connections {
+            target: appMenuModel
+            onBringToFocus: buttonRepeater.childAt(index).clicked()
+        }
+
         Repeater {
             id: buttonRepeater
             model: appMenuModel.visible ? appMenuModel : null
