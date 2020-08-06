@@ -3,6 +3,7 @@ Exec=@CMAKE_INSTALL_PREFIX@/bin/plasmashell
 X-DBUS-StartupType=Unique
 Name=Plasma Desktop Workspace
 Name[ar]=مساحة عمل سطح مكتب بلازما
+Name[az]=Plasma İş Masası Mühiti
 Name[bs]=Radni prostor plazma radne površi
 Name[ca]=Espai de treball de l'escriptori Plasma
 Name[ca@valencia]=Espai de treball de l'escriptori Plasma
@@ -58,4 +59,4 @@ X-KDE-autostart-phase=0
 Icon=plasma
 NoDisplay=true
 
-X-KDE-Wayland-Interfaces=org_kde_plasma_window_management,org_kde_kwin_keystate
+X-KDE-Wayland-Interfaces=org_kde_plasma_window_management,org_kde_kwin_keystate,zkde_screencast_unstable_v1

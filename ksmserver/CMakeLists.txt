@@ -1,6 +1,6 @@
 add_definitions(-DTRANSLATION_DOMAIN=\"ksmserver\")
 
-check_library_exists(ICE _IceTransNoListen "" HAVE__ICETRANSNOLISTEN)
+check_library_exists("${X11_ICE_LIB}" _IceTransNoListen "" HAVE__ICETRANSNOLISTEN)
 configure_file(config-ksmserver.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config-ksmserver.h)
 
 add_definitions("-DQT_NO_CAST_FROM_ASCII -DQT_NO_CAST_TO_ASCII")
@@ -48,7 +48,7 @@ target_link_libraries(ksmserver
     KF5::GlobalAccel
     KF5::I18n
     KF5::KIOCore
-    KF5::KIOWidgets
+    KF5::KIOGui
     ${X11_LIBRARIES}
     ${X11_Xrender_LIB}
     Qt5::X11Extras

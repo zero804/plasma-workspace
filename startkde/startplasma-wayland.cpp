@@ -76,6 +76,9 @@ int main(int argc, char** argv)
         return 1;
     }
     setupPlasmaEnvironment();
+    runStartupConfig();
+    qputenv("PLASMA_USE_QT_SCALING", "1");
+
     qputenv("XDG_SESSION_TYPE", "wayland");
 
     if (!syncDBusEnvironment()) {
@@ -90,7 +93,7 @@ int main(int argc, char** argv)
             args << QString::fromLocal8Bit(argv[i]);
         }
     } else {
-        args = QStringList { QStringLiteral("--xwayland"), QStringLiteral("--libinput"), QStringLiteral("--exit-with-session=" CMAKE_INSTALL_FULL_LIBEXECDIR "/startplasma-waylandsession") };
+        args = QStringList { QStringLiteral("--xwayland"), QStringLiteral("--exit-with-session=" CMAKE_INSTALL_FULL_LIBEXECDIR "/startplasma-waylandsession") };
     }
     runSync(QStringLiteral(KWIN_WAYLAND_BIN_PATH), args);
 

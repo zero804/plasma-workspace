@@ -1,4 +1,5 @@
 /* Copyright 2009  Jan Gerrit Marker <jangerrit@weiler-marker.com>
+ * Copyright 2020  Alexander Lohnau <alexander.lohnau@gmx.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,23 +25,22 @@
 #include <QIcon>
 
 #include <KProcess>
-#include <KUser>
-#include <kauth.h>
+#include <KAuth>
+#include <KLocalizedString>
 
-#include "processcore/processes.h"
-#include "processcore/process.h"
+#include <processcore/processes.h>
+#include <processcore/process.h>
 
-#include "killrunner_config.h"
+K_EXPORT_PLASMA_RUNNER_WITH_JSON(KillRunner, "plasma-runner-kill.json")
 
-K_EXPORT_PLASMA_RUNNER(kill, KillRunner)
-
-KillRunner::KillRunner(QObject *parent, const QVariantList& args)
-        : Plasma::AbstractRunner(parent, args),
-          m_processes(nullptr)
+KillRunner::KillRunner(QObject *parent, const QVariantList &args)
+        : Plasma::AbstractRunner(parent, args), m_processes(nullptr)
 {
-    Q_UNUSED(args);
-    setObjectName( QLatin1String("Kill Runner") );
-    reloadConfiguration();
+    setObjectName(QStringLiteral("Kill Runner"));
+
+    addAction(QStringLiteral("SIGTERM"), QIcon::fromTheme(QStringLiteral("application-exit")), i18n("Send SIGTERM"))->setData(15);
+    addAction(QStringLiteral("SIGKILL"), QIcon::fromTheme(QStringLiteral("process-stop")), i18n("Send SIGKILL"))->setData(9);
+    m_actionList = {action(QStringLiteral("SIGTERM")), action(QStringLiteral("SIGKILL"))};
 
     connect(this, &Plasma::AbstractRunner::prepare, this, &KillRunner::prep);
     connect(this, &Plasma::AbstractRunner::teardown, this, &KillRunner::cleanup);
@@ -50,9 +50,7 @@ KillRunner::KillRunner(QObject *parent, const QVariantList& args)
     connect(&m_delayedCleanupTimer, &QTimer::timeout, this, &KillRunner::cleanup);
 }
 
-KillRunner::~KillRunner()
-{
-}
+KillRunner::~KillRunner() = default;
 
 
 void KillRunner::reloadConfiguration()
@@ -62,8 +60,9 @@ void KillRunner::reloadConfiguration()
     if (grp.readEntry(CONFIG_USE_TRIGGERWORD, true)) {
         m_triggerWord = grp.readEntry(CONFIG_TRIGGERWORD, i18n("kill")) + QLatin1Char(' ');
     }
+    m_hasTrigger = !m_triggerWord.isEmpty();
 
-    m_sorting = (KillRunnerConfig::Sort) grp.readEntry(CONFIG_SORTING, 0);
+    m_sorting = (Sort) grp.readEntry(CONFIG_SORTING, static_cast<int>(Sort::NONE));
     QList<Plasma::RunnerSyntax> syntaxes;
     syntaxes << Plasma::RunnerSyntax(m_triggerWord + QStringLiteral(":q:"),
                                      i18n("Terminate running applications whose names match the query."));
@@ -94,8 +93,7 @@ void KillRunner::cleanup()
 void KillRunner::match(Plasma::RunnerContext &context)
 {
     QString term = context.query();
-    const bool hasTrigger = !m_triggerWord.isEmpty();
-    if (hasTrigger && !term.startsWith(m_triggerWord, Qt::CaseInsensitive)) {
+    if (m_hasTrigger && !term.startsWith(m_triggerWord, Qt::CaseInsensitive)) {
         return;
     }
 
@@ -124,36 +122,28 @@ void KillRunner::match(Plasma::RunnerContext &context)
         if (!context.isValid()) {
             return;
         }
-
         const QString name = process->name();
         if (!name.contains(term, Qt::CaseInsensitive)) {
-            //Process doesn't match the search term
             continue;
         }
 
         const quint64 pid = process->pid();
-        const qlonglong uid = process->uid();
-        const QString user = getUserName(uid);
-
-        QVariantList data;
-        data << pid << user;
-
         Plasma::QueryMatch match(this);
         match.setText(i18n("Terminate %1", name));
-        match.setSubtext(i18n("Process ID: %1\nRunning as user: %2", QString::number(pid), user));
+        match.setSubtext(i18n("Process ID: %1", QString::number(pid)));
         match.setIconName(QStringLiteral("application-exit"));
-        match.setData(data);
+        match.setData(pid);
         match.setId(name);
 
         // Set the relevance
         switch (m_sorting) {
-        case KillRunnerConfig::CPU:
+        case Sort::CPU:
             match.setRelevance((process->userUsage() + process->sysUsage()) / 100);
             break;
-        case KillRunnerConfig::CPUI:
+        case Sort::CPUI:
             match.setRelevance(1 - (process->userUsage() + process->sysUsage()) / 100);
             break;
-        case KillRunnerConfig::NONE:
+        case Sort::NONE:
             match.setRelevance(name.compare(term, Qt::CaseInsensitive) == 0 ? 1 : 9);
             break;
         }
@@ -161,7 +151,6 @@ void KillRunner::match(Plasma::RunnerContext &context)
         matches << match;
     }
 
-    qDebug() << "match count is" << matches.count();
     context.addMatches(matches);
 }
 
@@ -169,24 +158,18 @@ void KillRunner::run(const Plasma::RunnerContext &context, const Plasma::QueryMa
 {
     Q_UNUSED(context)
 
-    QVariantList data = match.data().value<QVariantList>();
-    quint64 pid = data[0].toUInt();
-//     QString user = data[1].toString();
+    const quint64 pid = match.data().toUInt();
 
     int signal;
-    if (match.selectedAction() != nullptr) {
+    if (match.selectedAction()) {
         signal = match.selectedAction()->data().toInt();
     } else {
         signal = 9; //default: SIGKILL
     }
 
-    QStringList args;
-    args << QStringLiteral("-%1").arg(signal) << QStringLiteral("%1").arg(pid);
-    KProcess process;
-    int returnCode = process.execute(QStringLiteral("kill"), args);
-
-    if (returnCode == 0)
-    {
+    const QStringList args = {QStringLiteral("-%1").arg(signal), QString::number(pid)};
+    int returnCode = KProcess::execute(QStringLiteral("kill"), args);
+    if (returnCode == 0) {
         return;
     }
 
@@ -202,24 +185,7 @@ QList<QAction*> KillRunner::actionsForMatch(const Plasma::QueryMatch &match)
 {
     Q_UNUSED(match)
 
-    QList<QAction*> ret;
-
-    if (!action(QStringLiteral("SIGTERM"))) {
-        (addAction(QStringLiteral("SIGTERM"), QIcon::fromTheme(QStringLiteral("application-exit")), i18n("Send SIGTERM")))->setData(15);
-        (addAction(QStringLiteral("SIGKILL"), QIcon::fromTheme(QStringLiteral("process-stop")), i18n("Send SIGKILL")))->setData(9);
-    }
-    ret << action(QStringLiteral("SIGTERM")) << action(QStringLiteral("SIGKILL"));
-    return ret;
-}
-
-QString KillRunner::getUserName(qlonglong uid)
-{
-    KUser user(uid);
-    if (user.isValid()) {
-        return user.loginName();
-    }
-    qDebug() << QStringLiteral("No user with UID %1 was found").arg(uid);
-    return QStringLiteral("root");//No user with UID uid was found, so root is used
+    return m_actionList;
 }
 
 #include "killrunner.moc"

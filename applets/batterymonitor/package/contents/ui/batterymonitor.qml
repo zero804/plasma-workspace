@@ -54,17 +54,29 @@ Item {
         } else if (pmSource.data["Battery"]["State"] === "FullyCharged") {
             return i18n("Fully Charged");
         }
+
+        const percent = pmSource.data.Battery.Percent;
         if (pmSource.data["AC Adapter"] && pmSource.data["AC Adapter"]["Plugged in"]) {
-            if (pmSource.data.Battery.State === "NoCharge") {
-                return i18n("Battery at %1%, not Charging", pmSource.data.Battery.Percent)
+            const state = pmSource.data.Battery.State;
+            if (state === "NoCharge") {
+                return i18n("Battery at %1%, not Charging", percent);
+            } else if (state === "Discharging") {
+                return i18n("Battery at %1%, plugged in but still discharging", percent);
+            } else if (state === "Charging") {
+                return i18n("Battery at %1%, Charging", percent);
             }
-        } else {
-            return i18n("Battery at %1%", pmSource.data.Battery.Percent);
         }
+        return i18n("Battery at %1%", percent);
     }
 
     Plasmoid.toolTipSubText: {
         var parts = [];
+
+        // Add special text for the "plugged in but still discharging" case
+        if (pmSource.data["AC Adapter"] && pmSource.data["AC Adapter"]["Plugged in"] && pmSource.data.Battery.State === "Discharging") {
+            parts.push(i18n("The power supply is not powerful enough to charge the battery"))
+        }
+
         if (batteries.count === 0) {
             parts.push("No Batteries Available");
         } else if (remainingTime > 0) {
@@ -81,7 +93,7 @@ Item {
         } // otherwise, don't add anything
 
         if (powermanagementDisabled) {
-            parts.push(i18n("Power management is disabled"));
+            parts.push(i18n("Automatic sleep and screen locking are disabled"));
         }
         return parts.join("\n");
     }
@@ -107,8 +119,7 @@ Item {
                                  "powerdevilglobalconfig.desktop"]
     readonly property bool kcmsAuthorized: KCMShell.authorize(batterymonitor.kcms).length > 0
 
-    readonly property var kcm_energyinfo: ["kcm_energyinfo.desktop"]
-    readonly property bool kcmEnergyInformationAuthorized: KCMShell.authorize(kcm_energyinfo).length > 0
+    readonly property bool kcmEnergyInformationAuthorized: KCMShell.authorize("kcm_energyinfo.desktop").length > 0
 
     property QtObject updateScreenBrightnessJob
     onScreenBrightnessChanged: {
@@ -146,7 +157,7 @@ Item {
     }
 
     function action_energyinformationkcm() {
-        KCMShell.open(batterymonitor.kcm_energyinfo);
+        KCMShell.openInfoCenter("kcm_energyinfo");
     }
 
     Component.onCompleted: {

@@ -328,12 +328,6 @@ void Notification::Private::setDesktopEntry(const QString &desktopEntry)
 
         const QString iconName = globalGroup.readEntry("IconName");
 
-        // For default events we try to show the application name from the desktop entry if possible
-        // This will have us show e.g. "Dr Konqi" instead of generic "Plasma Desktop"
-        if (isDefaultEvent && !serviceName.isEmpty()) {
-            applicationName = serviceName;
-        }
-
         // also only overwrite application icon name for non-default events (or if we don't have a service icon)
         if (!iconName.isEmpty() && (!isDefaultEvent || applicationIconName.isEmpty())) {
             applicationIconName = iconName;
@@ -341,6 +335,13 @@ void Notification::Private::setDesktopEntry(const QString &desktopEntry)
 
         const QRegularExpression regexp(QStringLiteral("^Event/([^/]*)$"));
         configurableNotifyRc = !config.groupList().filter(regexp).isEmpty();
+    }
+
+    // For default events we try to show the application name from the desktop entry if possible
+    // This will have us show e.g. "Dr Konqi" instead of generic "Plasma Desktop"
+    // The application may not send an applicationName. Use the name from the desktop entry then
+    if ((isDefaultEvent || applicationName.isEmpty()) && !serviceName.isEmpty()) {
+        applicationName = serviceName;
     }
 }
 
@@ -531,7 +532,13 @@ QString Notification::body() const
 
 void Notification::setBody(const QString &body)
 {
+    d->rawBody = body;
     d->body = Private::sanitize(body.trimmed());
+}
+
+QString Notification::rawBody() const
+{
+    return d->rawBody;
 }
 
 QString Notification::icon() const
@@ -747,6 +754,16 @@ bool Notification::dismissed() const
 void Notification::setDismissed(bool dismissed)
 {
     d->dismissed = dismissed;
+}
+
+QVariantMap Notification::hints() const
+{
+    return d->hints;
+}
+
+void Notification::setHints(const QVariantMap &hints)
+{
+    d->hints = hints;
 }
 
 void Notification::processHints(const QVariantMap &hints)

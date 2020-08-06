@@ -1286,8 +1286,8 @@ void ShellCorona::addOutput(QScreen* screen)
     if (view->rendererInterface()->graphicsApi() != QSGRendererInterface::Software) {
         connect(view, &QQuickWindow::sceneGraphError, this, &ShellCorona::glInitializationFailed);
     }
-    connect(screen, &QScreen::geometryChanged, this, [=]() {
-        const int id = m_screenPool->id(screen->name());
+    connect(view, &DesktopView::geometryChanged, this, [=]() {
+        const int id = m_screenPool->id(view->screen()->name());
         if (id >= 0) {
             emit screenGeometryChanged(id);
             emit availableScreenRegionChanged();
@@ -1398,6 +1398,7 @@ void ShellCorona::createWaitingPanels()
             connect(panel, &QQuickWindow::sceneGraphError, this, &ShellCorona::glInitializationFailed);
         }
         connect(panel, &QWindow::visibleChanged, this, &Plasma::Corona::availableScreenRectChanged);
+        connect(panel, &QWindow::screenChanged, this, &Plasma::Corona::availableScreenRectChanged);
         connect(panel, &PanelView::locationChanged, this, &Plasma::Corona::availableScreenRectChanged);
         connect(panel, &PanelView::visibilityModeChanged, this, &Plasma::Corona::availableScreenRectChanged);
         connect(panel, &PanelView::thicknessChanged, this, &Plasma::Corona::availableScreenRectChanged);

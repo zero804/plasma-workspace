@@ -21,7 +21,7 @@
 import QtQuick 2.6
 import QtQuick.Layouts 1.1
 import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.components 2.0 as Components
+import org.kde.plasma.components 2.0 as Components // Date label height breaks on vertical panel with PC3 version
 import org.kde.plasma.private.digitalclock 1.0
 
 Item {
@@ -75,7 +75,7 @@ Item {
 
     Connections {
         target: plasmoid
-        onContextualActionsAboutToShow: {
+        function onContextualActionsAboutToShow() {
             ClipboardMenu.secondsIncluded = main.showSeconds;
             ClipboardMenu.currentDate = main.currentTime;
         }
@@ -83,7 +83,7 @@ Item {
 
     Connections {
         target: plasmoid.configuration
-        onSelectedTimeZonesChanged: {
+        function onSelectedTimeZonesChanged() {
             // If the currently selected timezone was removed,
             // default to the first one in the list
             var lastSelectedTimezone = plasmoid.configuration.lastSelectedTimezone;

@@ -32,8 +32,9 @@
 #include <KWindowSystem>
 #include <KWindowEffects>
 #include <KLocalizedString>
-#include <KDirWatch>
 #include <KCrash>
+#include <KService>
+#include <KIO/CommandLauncherJob>
 
 #include <kdeclarative/qmlobject.h>
 
@@ -60,7 +61,15 @@ View::View(QWindow *)
 
     //used only by screen readers
     setTitle(i18n("KRunner"));
+
     m_config = KConfigGroup(KSharedConfig::openConfig(), "General");
+    m_configWatcher = KConfigWatcher::create(KSharedConfig::openConfig());
+    connect(m_configWatcher.data(), &KConfigWatcher::configChanged, this, [this](const KConfigGroup &group, const QByteArrayList &names) {
+        Q_UNUSED(names);
+        if (group.name() == QLatin1String("General")) {
+            loadConfig();
+        }
+    });
 
     loadConfig();
 
@@ -102,18 +111,6 @@ View::View(QWindow *)
     connect(qGuiApp, &QGuiApplication::screenRemoved, this, screenRemoved);
 
     connect(KWindowSystem::self(), &KWindowSystem::workAreaChanged, this, &View::resetScreenPos);
-
-    KDirWatch::self()->addFile(m_config.name());
-
-    // Catch both, direct changes to the config file ...
-    connect(KDirWatch::self(), &KDirWatch::dirty, this, [this]() {
-            m_config.config()->reparseConfiguration();
-            loadConfig();
-    });
-    connect(KDirWatch::self(), &KDirWatch::created, this, [this]() {
-            m_config.config()->reparseConfiguration();
-            loadConfig();
-    });
 
     connect(qGuiApp, &QGuiApplication::focusWindowChanged, this, &View::slotFocusWindowChanged);
 }
@@ -170,10 +167,19 @@ void View::loadConfig()
 
 bool View::event(QEvent *event)
 {
+    if (KWindowSystem::isPlatformWayland() && event->type() == QEvent::Expose && !dynamic_cast<QExposeEvent*>(event)->region().isNull()) {
+        auto surface = KWayland::Client::Surface::fromWindow(this);
+        auto shellSurface = KWayland::Client::PlasmaShellSurface::get(surface);
+        if (shellSurface && isVisible()) {
+            shellSurface->setPanelBehavior(KWayland::Client::PlasmaShellSurface::PanelBehavior::WindowsGoBelow);
+            shellSurface->setRole(KWayland::Client::PlasmaShellSurface::Role::Panel);
+            shellSurface->setPanelTakesFocus(true);
+        }
+    }
+    const bool retval = Dialog::event(event);
     // QXcbWindow overwrites the state in its show event. There are plans
     // to fix this in 5.4, but till then we must explicitly overwrite it
     // each time.
-    const bool retval = Dialog::event(event);
     bool setState = event->type() == QEvent::Show;
     if (event->type() == QEvent::PlatformSurface) {
         setState = (static_cast<QPlatformSurfaceEvent*>(event)->surfaceEventType() == QPlatformSurfaceEvent::SurfaceCreated);
@@ -181,6 +187,7 @@ bool View::event(QEvent *event)
     if (setState) {
         KWindowSystem::setState(winId(), NET::SkipTaskbar | NET::SkipPager);
     }
+
     return retval;
 }
 
@@ -232,14 +239,15 @@ void View::positionOnScreen()
     // in wayland, QScreen::availableGeometry() returns QScreen::geometry()
     // we could get a better value from plasmashell
     // BUG: 386114
-    QDBusInterface strutManager("org.kde.plasmashell", "/StrutManager", "org.kde.PlasmaShell.StrutManager");
-    QDBusPendingCall async = strutManager.asyncCall("availableScreenRect", shownOnScreen->name());
-    QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(async, this);
+    auto message = QDBusMessage::createMethodCall("org.kde.plasmashell", "/StrutManager",  "org.kde.PlasmaShell.StrutManager", "availableScreenRect");
+    message.setArguments({shownOnScreen->name()});
+    QDBusPendingCall call = QDBusConnection::sessionBus().asyncCall(message);
+    QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(call, this);
 
-    QObject::connect(watcher, &QDBusPendingCallWatcher::finished, this, [=]() {
+    QObject::connect(watcher, &QDBusPendingCallWatcher::finished, this, [this, watcher, shownOnScreen]() {
+        watcher->deleteLater();
         QDBusPendingReply<QRect> reply = *watcher;
 
-        setScreen(shownOnScreen);
         const QRect r = reply.isValid() ? reply.value() : shownOnScreen->availableGeometry();
 
         if (m_floating && !m_customPos.isNull()) {
@@ -268,14 +276,13 @@ void View::positionOnScreen()
             KWindowSystem::setOnDesktop(winId(), KWindowSystem::currentDesktop());
             KWindowSystem::setType(winId(), NET::Normal);
             //Turn the sliding effect off
-            KWindowEffects::slideWindow(winId(), KWindowEffects::NoEdge, 0);
+            setLocation(Plasma::Types::Floating);
         } else {
             KWindowSystem::setOnAllDesktops(winId(), true);
-            KWindowEffects::slideWindow(winId(), KWindowEffects::TopEdge, 0);
+            setLocation(Plasma::Types::TopEdge);
         }
 
         KWindowSystem::forceActiveWindow(winId());
-        watcher->deleteLater();
 
     });
 }
@@ -338,7 +345,18 @@ void View::switchUser()
 
 void View::displayConfiguration()
 {
-    QProcess::startDetached(QStringLiteral("kcmshell5"), QStringList() << QStringLiteral("plasmasearch"));
+    const QString systemSettings = QStringLiteral("systemsettings");
+    const QStringList kcmToOpen = QStringList(QStringLiteral("kcm_plasmasearch"));
+    KIO::CommandLauncherJob *job = nullptr;
+
+    if (KService::serviceByDesktopName(systemSettings)) {
+        job = new KIO::CommandLauncherJob(QStringLiteral("systemsettings5"), kcmToOpen);
+        job->setDesktopName(systemSettings);
+    } else {
+        job = new KIO::CommandLauncherJob(QStringLiteral("kcmshell5"), kcmToOpen);
+    }
+
+    job->start();
 }
 
 bool View::canConfigure() const

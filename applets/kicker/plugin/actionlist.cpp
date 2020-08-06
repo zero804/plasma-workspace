@@ -28,11 +28,12 @@
 #include <QDir>
 #include <QStandardPaths>
 
+#include <KIO/ApplicationLauncherJob>
 #include <KLocalizedString>
 #include <KMimeTypeTrader>
+#include <KNotificationJobUiDelegate>
 #include <KPropertiesDialog>
 #include <KProtocolInfo>
-#include <KRun>
 
 #include <KActivities/Stats/Cleaning>
 #include <KActivities/Stats/ResultSet>
@@ -131,7 +132,10 @@ bool handleFileItemAction(const KFileItem &fileItem, const QString &actionId, co
             return false;
         }
 
-        KRun::runService(*service, QList<QUrl>() << fileItem.url(), QApplication::activeWindow());
+        auto *job = new KIO::ApplicationLauncherJob(service);
+        job->setUrls({fileItem.url()});
+        job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoHandlingEnabled));
+        job->start();
 
         *close = true;
 
@@ -268,7 +272,7 @@ QVariantList recentDocumentActions(KService::Ptr service)
         }
 
         if (list.isEmpty()) {
-            list << createTitleActionItem(i18n("Recent Documents"));
+            list << createTitleActionItem(i18n("Recent Files"));
         }
 
         QVariantMap item = createActionItem(url.fileName(), fileItem.iconName(), QStringLiteral("_kicker_recentDocument"), resource);
@@ -277,7 +281,7 @@ QVariantList recentDocumentActions(KService::Ptr service)
     }
 
     if (!list.isEmpty()) {
-        QVariantMap forgetAction = createActionItem(i18n("Forget Recent Documents"), QStringLiteral("edit-clear-history"), QStringLiteral("_kicker_forgetRecentDocuments"));
+        QVariantMap forgetAction = createActionItem(i18n("Forget Recent Files"), QStringLiteral("edit-clear-history"), QStringLiteral("_kicker_forgetRecentDocuments"));
         list << forgetAction;
     }
 
@@ -314,7 +318,10 @@ bool handleRecentDocumentAction(KService::Ptr service, const QString &actionId, 
         return false;
     }
 
-    return (KRun::runService(*service, QList<QUrl>() << QUrl(argument), QApplication::activeWindow()) != 0);
+    auto *job = new KIO::ApplicationLauncherJob(service);
+    job->setUrls({QUrl(argument)});
+    job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoHandlingEnabled));
+    return job->exec();
 }
 
 Q_GLOBAL_STATIC(MenuEntryEditor, menuEntryEditor)

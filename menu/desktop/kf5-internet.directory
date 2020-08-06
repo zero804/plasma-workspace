@@ -5,6 +5,7 @@ Name[af]=Internet
 Name[ar]=الإنترنت
 Name[as]=ইন্টাৰ্নে'ট
 Name[ast]=Internet
+Name[az]=Internet
 Name[be]=Інтэрнэт
 Name[be@latin]=Internet
 Name[bg]=Интернет
@@ -90,7 +91,7 @@ Name[uz@cyrillic]=Интернет
 Name[vi]=Mạng
 Name[wa]=Daegntoele
 Name[x-test]=xxInternetxx
-Name[zh_CN]=互联网
+Name[zh_CN]=网络
 Name[zh_TW]=網際網路
 Icon=applications-internet
 

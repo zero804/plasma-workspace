@@ -18,7 +18,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *********************************************************************/
 import QtQuick 2.0
 import org.kde.plasma.extras 2.0 as PlasmaExtras
-import org.kde.plasma.components 2.0 as PlasmaComponents
+import org.kde.plasma.components 2.0 as PlasmaComponents // For Highlight
+
+import org.kde.kirigami 2.12 as Kirigami
 
 PlasmaExtras.ScrollArea {
     id: menu
@@ -28,7 +30,7 @@ PlasmaExtras.ScrollArea {
     signal itemSelected(string uuid)
     signal remove(string uuid)
     signal edit(string uuid)
-    signal barcode(string uuid)
+    signal barcode(string text)
     signal action(string uuid)
 
     ListView {
@@ -49,8 +51,18 @@ PlasmaExtras.ScrollArea {
             onItemSelected: menu.itemSelected(uuid)
             onRemove: menu.remove(uuid)
             onEdit: menu.edit(uuid)
-            onBarcode: menu.barcode(uuid)
+            onBarcode: menu.barcode(text)
             onAction: menu.action(uuid)
+        }
+
+        PlasmaExtras.PlaceholderMessage {
+            id: emptyHint
+
+            anchors.centerIn: parent
+            width: parent.width - (units.largeSpacing * 4)
+
+            visible: menuListView.count === 0
+            text: i18n("Clipboard is empty")
         }
     }
 }

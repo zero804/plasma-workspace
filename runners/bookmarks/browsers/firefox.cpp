@@ -19,11 +19,10 @@
  */
 
 #include "firefox.h"
-#include <KJob>
-#include <QDebug>
-#include "bookmarksrunner_defs.h"
+#include "bookmarks_debug.h"
 #include <QFile>
 #include <QDir>
+#include <QRegularExpression>
 #include <KConfigGroup>
 #include <KSharedConfig>
 #include "bookmarkmatch.h"
@@ -37,36 +36,38 @@ Firefox::Firefox(QObject *parent) :
     m_fetchsqlite(nullptr),
     m_fetchsqlite_fav(nullptr)
 {
-  reloadConfiguration();
-  //qDebug() << "Loading Firefox Bookmarks Browser";
+    reloadConfiguration();
+    m_dbCacheFile = QStandardPaths::writableLocation(QStandardPaths::CacheLocation)
+        + QStringLiteral("/bookmarkrunnerfirefoxdbfile.sqlite");
+    m_dbCacheFile_fav = QStandardPaths::writableLocation(QStandardPaths::CacheLocation)
+        + QStringLiteral("/bookmarkrunnerfirefoxfavdbfile.sqlite");
 }
-
 
 Firefox::~Firefox()
 {
-    if (!m_dbCacheFile.isEmpty()) {
+    // Delete the cached databases
+    if (!m_dbFile.isEmpty()) {
         QFile db_CacheFile(m_dbCacheFile);
         if (db_CacheFile.exists()) {
-            //qDebug() << "Cache file was removed: " << db_CacheFile.remove();
+            db_CacheFile.remove();
         }
     }
-    //qDebug() << "Deleted Firefox Bookmarks Browser";
+    if (!m_dbFile_fav.isEmpty()) {
+        QFile db_CacheFileFav(m_dbCacheFile_fav);
+        if (db_CacheFileFav.exists()) {
+            db_CacheFileFav.remove();
+        }
+    }
 }
 
 void Firefox::prepare()
 {
-    if (m_dbCacheFile.isEmpty()) {
-        m_dbCacheFile = QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + QStringLiteral("/bookmarkrunnerfirefoxdbfile.sqlite");
-    }
-    if (m_dbCacheFile_fav.isEmpty()) {
-        m_dbCacheFile_fav = QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + QStringLiteral("/bookmarkrunnerfirefoxfavdbfile.sqlite");
-    }
-    if (!m_dbFile.isEmpty()) {
-        m_fetchsqlite = new FetchSqlite(m_dbFile, m_dbCacheFile);
+    if (updateCacheFile(m_dbFile, m_dbCacheFile) != Error) {
+        m_fetchsqlite = new FetchSqlite(m_dbCacheFile);
         m_fetchsqlite->prepare();
     }
-    if (!m_dbFile_fav.isEmpty()) {
-        m_fetchsqlite_fav = new FetchSqlite(m_dbFile_fav, m_dbCacheFile_fav);
+    if (updateCacheFile(m_dbFile_fav, m_dbCacheFile_fav) != Error) {
+        m_fetchsqlite_fav = new FetchSqlite(m_dbCacheFile_fav);
         m_fetchsqlite_fav->prepare();
 
         delete m_favicon;
@@ -82,7 +83,6 @@ QList< BookmarkMatch > Firefox::match(const QString& term, bool addEverything)
     if (!m_fetchsqlite) {
         return matches;
     }
-    //qDebug() << "Firefox bookmark: match " << term;
 
     QString query;
     if (addEverything) {
@@ -90,7 +90,7 @@ QList< BookmarkMatch > Firefox::match(const QString& term, bool addEverything)
                     "FROM moz_bookmarks, moz_places WHERE " \
                     "moz_bookmarks.type = 1 AND moz_bookmarks.fk = moz_places.id");
     } else {
-        query = QString("SELECT moz_bookmarks.fk, moz_bookmarks.title, moz_places.url " \
+        query = QStringLiteral("SELECT moz_bookmarks.fk, moz_bookmarks.title, moz_places.url " \
                         "FROM moz_bookmarks, moz_places WHERE " \
                         "moz_bookmarks.type = 1 AND moz_bookmarks.fk = moz_places.id AND " \
                         "(moz_bookmarks.title LIKE :term OR moz_places.url LIKE :term)");
@@ -100,7 +100,7 @@ QList< BookmarkMatch > Firefox::match(const QString& term, bool addEverything)
     };
     const QList<QVariantMap> results = m_fetchsqlite->query(query, bindVariables);
     QMultiMap<QString, QString> uniqueResults;
-    for(const QVariantMap &result : results) {
+    for (const QVariantMap &result : results) {
         const QString title = result.value(QStringLiteral("title")).toString();
         const QUrl url = result.value(QStringLiteral("url")).toUrl();
         if (url.isEmpty() || url.scheme() == QLatin1String("place")) {
@@ -137,22 +137,22 @@ QList< BookmarkMatch > Firefox::match(const QString& term, bool addEverything)
     }
 
     for (auto result = uniqueResults.constKeyValueBegin(); result != uniqueResults.constKeyValueEnd(); ++result) {
-        BookmarkMatch bookmarkMatch(m_favicon, term, (*result).second, (*result).first);
+        const QString url = (*result).first;
+        BookmarkMatch bookmarkMatch(m_favicon->iconFor(url), term, (*result).second, url);
         bookmarkMatch.addTo(matches, addEverything);
     }
 
     return matches;
 }
 
-
 void Firefox::teardown()
 {
-    if(m_fetchsqlite) {
+    if (m_fetchsqlite) {
         m_fetchsqlite->teardown();
         delete m_fetchsqlite;
         m_fetchsqlite = nullptr;
     }
-    if(m_fetchsqlite_fav) {
+    if (m_fetchsqlite_fav) {
         m_fetchsqlite_fav->teardown();
         delete m_fetchsqlite_fav;
         m_fetchsqlite_fav = nullptr;
@@ -161,56 +161,57 @@ void Firefox::teardown()
     }
 }
 
-
-
 void Firefox::reloadConfiguration()
 {
-    KConfigGroup config(KSharedConfig::openConfig(QStringLiteral("kdeglobals")), QStringLiteral("General") );
-    if (QSqlDatabase::isDriverAvailable(QStringLiteral("QSQLITE"))) {
-        KConfigGroup grp = config;
-        /* This allows the user to specify a profile database */
-        m_dbFile = grp.readEntry<QString>("dbfile", QLatin1String(""));
-        if (m_dbFile.isEmpty() || !QFile::exists(m_dbFile)) {
-            //Try to get the right database file, the default profile is used
-            KConfig firefoxProfile(QDir::homePath() + "/.mozilla/firefox/profiles.ini",
-                                   KConfig::SimpleConfig);
-            QStringList profilesList = firefoxProfile.groupList();
-            profilesList = profilesList.filter(QRegExp(QStringLiteral("^Profile\\d+$")));
-            int size = profilesList.size();
+    if (!QSqlDatabase::isDriverAvailable(QStringLiteral("QSQLITE"))) {
+        qCWarning(RUNNER_BOOKMARKS) << "SQLITE driver isn't available";
+        return;
+    }
+    KConfigGroup grp(KSharedConfig::openConfig(QStringLiteral("kdeglobals")), QStringLiteral("General"));
+    /* This allows the user to specify a profile database */
+    m_dbFile = grp.readEntry("dbfile", QString());
+    if (m_dbFile.isEmpty() || !QFile::exists(m_dbFile)) {
+        //Try to get the right database file, the default profile is used
+        KConfig firefoxProfile(QDir::homePath() + "/.mozilla/firefox/profiles.ini",
+                               KConfig::SimpleConfig);
+        QStringList profilesList = firefoxProfile.groupList();
+        profilesList = profilesList.filter(QRegularExpression(QStringLiteral("^Profile\\d+$")));
 
-            QString profilePath;
-            if (size == 1) {
-                // There is only 1 profile so we select it
-                KConfigGroup fGrp = firefoxProfile.group(profilesList.first());
-                profilePath = fGrp.readEntry("Path", "");
+        QString profilePath;
+        if (profilesList.size() == 1) {
+            // There is only 1 profile so we select it
+            KConfigGroup fGrp = firefoxProfile.group(profilesList.first());
+            profilePath = fGrp.readEntry("Path");
+        } else {
+            const QStringList installConfig = firefoxProfile.groupList().filter(QRegularExpression("^Install.*"));
+            // The profile with Default=1 is not always the default profile, see BUG: 418526
+            // If there is only one Install* group it contains the default profile
+            if (installConfig.size() == 1) {
+                profilePath = firefoxProfile.group(installConfig.first()).readEntry("Default");
             } else {
                 // There are multiple profiles, find the default one
-                foreach(const QString & profileName, profilesList) {
+                for (const QString &profileName: qAsConst(profilesList)) {
                     KConfigGroup fGrp = firefoxProfile.group(profileName);
                     if (fGrp.readEntry<int>("Default", 0)) {
-                        profilePath = fGrp.readEntry("Path", "");
+                        profilePath = fGrp.readEntry("Path");
                         break;
                     }
                 }
             }
-
-            if (profilePath.isEmpty()) {
-                //qDebug() << "No default firefox profile found";
-                return;
-            }
-	    //qDebug() << "Profile " << profilePath << " found";
-            profilePath.prepend(QStringLiteral("%1/.mozilla/firefox/").arg(QDir::homePath()));
-            m_dbFile = profilePath + "/places.sqlite";
-            grp.writeEntry("dbfile", m_dbFile);
-            m_dbFile_fav = profilePath + "/favicons.sqlite";
-        } else {
-            auto dir = QDir(m_dbFile);
-            if (dir.cdUp()) {
-                QString profilePath = dir.absolutePath();
-                m_dbFile_fav = profilePath + "/favicons.sqlite";
-            }
         }
+
+        if (profilePath.isEmpty()) {
+            qCWarning(RUNNER_BOOKMARKS) << "No default firefox profile found";
+            return;
+        }
+        profilePath.prepend(QStringLiteral("%1/.mozilla/firefox/").arg(QDir::homePath()));
+        m_dbFile = profilePath + "/places.sqlite";
+        m_dbFile_fav = profilePath + "/favicons.sqlite";
     } else {
-        //qDebug() << "SQLITE driver isn't available";
+        auto dir = QDir(m_dbFile);
+        if (dir.cdUp()) {
+            QString profilePath = dir.absolutePath();
+            m_dbFile_fav = profilePath + "/favicons.sqlite";
+        }
     }
 }

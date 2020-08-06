@@ -24,7 +24,7 @@ import QtQuick.Controls 1.1
 import QtGraphicalEffects 1.0
 
 import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.components 2.0 as PlasmaComponents
+import org.kde.plasma.components 3.0 as PlasmaComponents3
 import org.kde.plasma.extras 2.0 as PlasmaExtras
 
 import "components"
@@ -411,26 +411,6 @@ PlasmaCore.ColorScope {
             }
         }
 
-        Image {
-            id: logo
-            visible: config.showlogo == "shown"
-            source: config.logo
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.bottom: footer.top
-            anchors.bottomMargin: units.largeSpacing
-            asynchronous: true
-            sourceSize.height: height
-            opacity: loginScreenRoot.uiVisible ? 0 : 1
-            fillMode: Image.PreserveAspectFit
-            height: Math.round(units.gridUnit * 3.5)
-            Behavior on opacity {
-                OpacityAnimator {
-                    duration: units.longDuration
-                    easing.type: Easing.InOutQuad
-                }
-            }
-        }
-
         DropShadow {
             id: logoShadow
             anchors.fill: logo
@@ -444,7 +424,29 @@ PlasmaCore.ColorScope {
             color: "black" // matches Breeze window decoration and desktopcontainment
             opacity: loginScreenRoot.uiVisible ? 0 : 1
             Behavior on opacity {
-                OpacityAnimator {
+                //OpacityAnimator when starting from 0 is buggy (it shows one frame with opacity 1)"
+                NumberAnimation {
+                    duration: units.longDuration
+                    easing.type: Easing.InOutQuad
+                }
+            }
+        }
+
+        Image {
+            id: logo
+            visible: config.showlogo == "shown"
+            source: config.logo
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: footer.top
+            anchors.bottomMargin: units.largeSpacing
+            asynchronous: true
+            sourceSize.height: height
+            opacity: loginScreenRoot.uiVisible ? 0 : 1
+            fillMode: Image.PreserveAspectFit
+            height: Math.round(units.gridUnit * 3.5)
+            Behavior on opacity {
+                // OpacityAnimator when starting from 0 is buggy (it shows one frame with opacity 1)"
+                NumberAnimation {
                     duration: units.longDuration
                     easing.type: Easing.InOutQuad
                 }
@@ -467,10 +469,10 @@ PlasmaCore.ColorScope {
                 }
             }
 
-            PlasmaComponents.ToolButton {
+            PlasmaComponents3.ToolButton {
                 text: i18ndc("plasma_lookandfeel_org.kde.lookandfeel", "Button to show/hide virtual keyboard", "Virtual Keyboard")
                 font.pointSize: config.fontSize
-                iconName: inputPanel.keyboardActive ? "input-keyboard-virtual-on" : "input-keyboard-virtual-off"
+                icon.name: inputPanel.keyboardActive ? "input-keyboard-virtual-on" : "input-keyboard-virtual-off"
                 onClicked: inputPanel.showHide()
                 visible: inputPanel.status == Loader.Ready
             }
@@ -492,13 +494,13 @@ PlasmaCore.ColorScope {
 
     Connections {
         target: sddm
-        onLoginFailed: {
+        function onLoginFailed() {
             notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Login Failed")
             footer.enabled = true
             mainStack.enabled = true
             userListComponent.userList.opacity = 1
         }
-        onLoginSucceeded: {
+        function onLoginSucceeded() {
             //note SDDM will kill the greeter at some random point after this
             //there is no certainty any transition will finish, it depends on the time it
             //takes to complete the init

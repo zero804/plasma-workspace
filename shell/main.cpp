@@ -26,6 +26,8 @@
 #include <QMessageBox>
 #include <QDBusConnection>
 #include <QDBusMessage>
+#include <QtQml/QQmlDebuggingEnabler>
+#include <QLoggingCategory>
 
 #include <KAboutData>
 #include <KQuickAddons/QtQuickSettings>
@@ -46,8 +48,26 @@
 #include <QDir>
 #include <QDBusConnectionInterface>
 
+static QLoggingCategory::CategoryFilter oldCategoryFilter;
+
+// Qt 5.15 introduces a new syntax for connections
+// framework code can't port away due to needing Qt5.12
+// this filters out the warnings
+// Remove this once we depend on Qt5.15 in frameworks
+void filterConnectionSyntaxWarning(QLoggingCategory *category)
+{
+    if (qstrcmp(category->categoryName(), "qt.qml.connections") == 0) {
+        category->setEnabled(QtWarningMsg, false);
+    } else if (oldCategoryFilter) {
+        oldCategoryFilter(category);
+    }
+}
+
 int main(int argc, char *argv[])
 {
+    if (qEnvironmentVariableIsSet("PLASMA_ENABLE_QML_DEBUG")) {
+        QQmlDebuggingEnabler debugger;
+    }
     //Plasma scales itself to font DPI
     //on X, where we don't have compositor scaling, this generally works fine.
     //also there are bugs on older Qt, especially when it comes to fractional scaling
@@ -65,6 +85,8 @@ int main(int argc, char *argv[])
     QCoreApplication::setAttribute(Qt::AA_DisableSessionManager);
 
     QQuickWindow::setDefaultAlphaBuffer(true);
+
+    oldCategoryFilter = QLoggingCategory::installFilter(filterConnectionSyntaxWarning);
 
     const bool qpaVariable = qEnvironmentVariableIsSet("QT_QPA_PLATFORM");
     KWorkSpace::detectPlatform(argc, argv);

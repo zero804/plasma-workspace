@@ -27,12 +27,12 @@
 
 #include "screensaver_interface.h"
 
-K_EXPORT_PLASMA_RUNNER(calculatorrunner, SessionRunner)
+K_EXPORT_PLASMA_RUNNER_WITH_JSON(SessionRunner, "plasma-runner-sessions.json")
 
 SessionRunner::SessionRunner(QObject *parent, const QVariantList &args)
     : Plasma::AbstractRunner(parent, args)
 {
-    setObjectName( QLatin1String("Sessions" ));
+    setObjectName(QStringLiteral("Sessions"));
     setPriority(LowPriority);
     setIgnoredTypes(Plasma::RunnerContext::Directory | Plasma::RunnerContext::File | 
                     Plasma::RunnerContext::NetworkLocation);

@@ -20,7 +20,7 @@
 import QtQuick 2.0
 import QtQuick.Layouts 1.1
 import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.components 2.0 as Components
+import org.kde.plasma.components 3.0 as PlasmaComponents3
 
 RowLayout {
     property alias iconSource: iconItem.source
@@ -30,18 +30,17 @@ RowLayout {
 
     PlasmaCore.IconItem {
         id: iconItem
-        Layout.preferredWidth: units.iconSizes.medium
-        Layout.preferredHeight: units.iconSizes.medium
+        Layout.preferredWidth: units.iconSizes.small
+        Layout.preferredHeight: units.iconSizes.small
         visible: valid
     }
 
-    Components.Label {
+    PlasmaComponents3.Label {
         id: label
         Layout.fillWidth: true
-        height: implicitHeight
-        font.pointSize: theme.smallestFont.pointSize
+        font: theme.smallestFont
         wrapMode: Text.WordWrap
         elide: Text.ElideRight
-        maximumLineCount: 3
+        maximumLineCount: 4
     }
 }

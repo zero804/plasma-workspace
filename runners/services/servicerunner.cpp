@@ -294,7 +294,11 @@ private:
             qCDebug(RUNNER_SERVICES) << service->name() << "is this relevant:" << relevance;
             match.setRelevance(relevance);
             if (service->serviceTypes().contains(QLatin1String("KCModule"))) {
-                match.setMatchCategory(i18n("System Settings"));
+                if (service->parentApp() == QStringLiteral("kinfocenter")) {
+                    match.setMatchCategory(i18n("System Information"));
+                } else {
+                    match.setMatchCategory(i18n("System Settings"));
+                }
             }
             matches << match;
         }
@@ -400,9 +404,7 @@ private:
 ServiceRunner::ServiceRunner(QObject *parent, const QVariantList &args)
     : Plasma::AbstractRunner(parent, args)
 {
-    Q_UNUSED(args)
-
-    setObjectName( QStringLiteral("Application" ));
+    setObjectName(QStringLiteral("Application"));
     setPriority(AbstractRunner::HighestPriority);
 
     addSyntax(Plasma::RunnerSyntax(QStringLiteral(":q:"), i18n("Finds applications whose name or description match :q:")));
@@ -412,10 +414,7 @@ ServiceRunner::~ServiceRunner() = default;
 
 QStringList ServiceRunner::categories() const
 {
-    QStringList cat;
-    cat << i18n("Applications") << i18n("System Settings");
-
-    return cat;
+    return {i18n("Applications"), i18n("System Settings")};
 }
 
 QIcon ServiceRunner::categoryIcon(const QString& category) const
@@ -440,7 +439,7 @@ void ServiceRunner::match(Plasma::RunnerContext &context)
 
 void ServiceRunner::run(const Plasma::RunnerContext &context, const Plasma::QueryMatch &match)
 {
-    Q_UNUSED(context);
+    Q_UNUSED(context)
 
     const QUrl dataUrl = match.data().toUrl();
 
@@ -458,6 +457,18 @@ void ServiceRunner::run(const Plasma::RunnerContext &context, const Plasma::Quer
 
     const QString actionName = QUrlQuery(dataUrl).queryItemValue(QStringLiteral("action"));
     if (actionName.isEmpty()) {
+        // We want to load kcms directly with systemsettings,
+        // but we can't completely replace kcmshell with systemsettings
+        // as we need to be able to load kcms without plasma and we can't 
+        // implement all kcmshell features into systemsettings
+        if (service->serviceTypes().contains(QLatin1String("KCModule"))) {
+            if (service->parentApp() == QStringLiteral("kinfocenter")) {
+                service->setExec(QStringLiteral("kinfocenter ") + service->desktopEntryName());
+            // We can't display a KCM in systemsettings if it has no parent, BUG: 423612
+            } else if (!service->property("X-KDE-System-Settings-Parent-Category").toString().isEmpty()) {
+                service->setExec(QStringLiteral("systemsettings5 ") + service->desktopEntryName());
+            }
+        }
         job = new KIO::ApplicationLauncherJob(service);
     } else {
         const auto actions = service->actions();
@@ -477,7 +488,14 @@ void ServiceRunner::run(const Plasma::RunnerContext &context, const Plasma::Quer
 
 QMimeData * ServiceRunner::mimeDataForMatch(const Plasma::QueryMatch &match)
 {
-    KService::Ptr service = KService::serviceByStorageId(match.data().toString());
+    const QUrl dataUrl = match.data().toUrl();
+
+    const QString actionName = QUrlQuery(dataUrl).queryItemValue(QStringLiteral("action"));
+    if (!actionName.isEmpty()) {
+        return nullptr;
+    }
+
+    KService::Ptr service = KService::serviceByStorageId(dataUrl.path());
     if (!service) {
         return nullptr;
     }

@@ -109,8 +109,18 @@ QVariant RunnerMatchesModel::data(const QModelIndex &index, int role) const
             return actionList;
         }
 
-        const KService::Ptr service = KService::serviceByStorageId(match.data().toString());
+        const QUrl dataUrl(match.data().toUrl());
+        if (dataUrl.scheme() != QLatin1String("applications")) {
+            return actionList;
+        }
 
+        // Don't offer jump list actions on a jump list action.
+        const QString actionName = QUrlQuery(dataUrl).queryItemValue(QStringLiteral("action"));
+        if (!actionName.isEmpty()) {
+            return actionList;
+        }
+
+        const KService::Ptr service = KService::serviceByStorageId(dataUrl.path());
         if (service) {
             if (!actionList.isEmpty()) {
                 actionList << Kicker::createSeparatorActionItem();
@@ -175,7 +185,7 @@ bool RunnerMatchesModel::trigger(int row, const QString &actionId, const QVarian
 
     QObject *appletInterface = static_cast<RunnerModel *>(parent())->appletInterface();
 
-    const KService::Ptr service = KService::serviceByStorageId(match.data().toString());
+    const KService::Ptr service = KService::serviceByStorageId(match.data().toUrl().toString(QUrl::RemoveScheme));
 
     if (Kicker::handleAddLauncherAction(actionId, appletInterface, service)) {
         return true;

@@ -27,12 +27,15 @@ License along with this library.  If not, see <http://www.gnu.org/licenses/>.
 #include <kemailsettings.h>
 #include <KFileItem>
 #include <KMimeTypeTrader>
+#include <KNotificationJobUiDelegate>
 #include <KRun>
 #include <KServiceTypeTrader>
 #include <KSharedConfig>
 #include <KStartupInfo>
 #include <KWindowSystem>
 #include <KProcessList>
+
+#include <KIO/ApplicationLauncherJob>
 
 #include <config-X11.h>
 
@@ -807,14 +810,17 @@ void runApp(const AppData &appData, const QList<QUrl> &urls)
         if (appData.url.scheme() == QLatin1String("applications")) {
             service = KService::serviceByMenuId(appData.url.path());
         } else if (appData.url.scheme() == QLatin1String("preferred")) {
-            const KService::Ptr service = KService::serviceByStorageId(defaultApplication(appData.url));
+            service = KService::serviceByStorageId(defaultApplication(appData.url));
         } else {
             service = KService::serviceByDesktopPath(appData.url.toLocalFile());
         }
 
         if (service && service->isApplication()) {
-            KRun::runApplication(*service, urls, nullptr, KRun::RunFlags(), QString(),
-                KStartupInfo::createNewStartupIdForTimestamp(timeStamp));
+            auto *job = new KIO::ApplicationLauncherJob(service);
+            job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoErrorHandlingEnabled));
+            job->setUrls(urls);
+            job->setStartupId(KStartupInfo::createNewStartupIdForTimestamp(timeStamp));
+            job->start();
 
             KActivities::ResourceInstance::notifyAccessed(QUrl(QStringLiteral("applications:") + service->storageId()),
                 QStringLiteral("org.kde.libtaskmanager"));

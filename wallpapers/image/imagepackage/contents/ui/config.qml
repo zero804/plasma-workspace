@@ -28,7 +28,7 @@ import org.kde.kquickcontrolsaddons 2.0
 import org.kde.newstuff 1.62 as NewStuff
 import org.kde.draganddrop 2.0 as DragDrop
 import org.kde.kcm 1.1 as KCM
-import org.kde.kirigami 2.5 as Kirigami
+import org.kde.kirigami 2.12 as Kirigami
 
 ColumnLayout {
     id: root
@@ -274,6 +274,32 @@ ColumnLayout {
                         model: imageWallpaper.slidePaths
                         delegate: Kirigami.SwipeListItem {
                             id: folderDelegate
+                            width: slidePathsView.width
+                            contentItem: Kirigami.BasicListItem {
+                                // The parent item already has a highlight
+                                activeBackgroundColor: "transparent"
+                                // Otherwise there are unnecessary margins
+                                anchors.top: parent.top
+                                anchors.bottom: parent.bottom
+                                anchors.left: parent.left
+                                // No right anchor so text can be elided by actions
+
+                                // Header: the folder
+                                label: {
+                                    var strippedPath = modelData.replace(/\/+$/, "");
+                                    return strippedPath.split('/').pop()
+                                }
+                                // Subtitle: the path to the folder
+                                subtitle: {
+                                    var strippedPath = modelData.replace(/\/+$/, "");
+                                    return strippedPath.replace(/\/[^\/]*$/, '');;
+                                }
+
+                                QtControls2.ToolTip.text: modelData
+                                QtControls2.ToolTip.visible: hovered
+                                QtControls2.ToolTip.delay: 1000
+                                QtControls2.ToolTip.timeout: 5000
+                            }
                             actions: [
                                 Kirigami.Action {
                                     iconName: "list-remove"
@@ -286,37 +312,6 @@ ColumnLayout {
                                     onTriggered: imageWallpaper.openFolder(modelData)
                                 }
                             ]
-                            ColumnLayout {
-
-                                width: slidePathsView.width
-
-                                QtControls2.ToolTip.text: modelData
-                                QtControls2.ToolTip.visible: folderDelegate.hovered && subtitle.truncated
-                                QtControls2.ToolTip.delay: 1000
-                                QtControls2.ToolTip.timeout: 5000
-
-                                // Header: the folder
-                                QtControls2.Label {
-                                    Layout.fillWidth: true
-                                    elide: Text.ElideRight
-                                    text: {
-                                        var strippedPath = modelData.replace(/\/+$/, "");
-                                        return strippedPath.split('/').pop()
-                                    }
-                                }
-                                // Subtitle: the path to the folder
-                                QtControls2.Label {
-                                    id: subtitle
-                                    Layout.fillWidth: true
-                                    elide: Text.ElideRight
-                                    text: {
-                                        var strippedPath = modelData.replace(/\/+$/, "");
-                                        return strippedPath.replace(/\/[^\/]*$/, '');;
-                                    }
-                                    font.pointSize: theme.smallestFont.pointSize
-                                    opacity: 0.6
-                                }
-                            }
                         }
 
                         Kirigami.Heading {
@@ -365,18 +360,7 @@ ColumnLayout {
             function resetCurrentIndex() {
                 //that min is needed as the module will be populated in an async way
                 //and only on demand so we can't ensure it already exists
-                view.currentIndex = Math.min(imageModel.indexOf(cfg_Image), imageModel.rowCount()-1)
-            }
-
-            Connections {
-                target: imageModel
-                onRowsInserted: resetCurrentIndex()
-                onRowsRemoved: resetCurrentIndex()
-            }
-
-            Connections {
-                target: root
-                onCfg_ImageChanged: resetCurrentIndex()
+                view.currentIndex = Qt.binding(function() { return Math.min(imageModel.indexOf(cfg_Image), imageModel.count - 1) });
             }
 
             //kill the space for label under thumbnails

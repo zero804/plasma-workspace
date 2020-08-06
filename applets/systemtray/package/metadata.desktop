@@ -3,6 +3,7 @@ Name=System Tray
 Name[af]=Stelsellaai
 Name[ar]=صينية النظام
 Name[ast]=Bandexa del sistema
+Name[az]=Sistem Çəkməcəsi
 Name[be]=Сістэмны трэй
 Name[be@latin]=Systemny trej
 Name[bg]=Системен панел
@@ -104,3 +105,4 @@ X-KDE-PluginInfo-EnabledByDefault=true
 X-Plasma-ContainmentType=Panel
 #this is the internal implementation: can't be loaded directly
 NoDisplay=true
+X-KDE-FormFactors=desktop

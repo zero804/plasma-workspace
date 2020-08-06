@@ -27,30 +27,26 @@
 #include <QJSEngine>
 #include <QGuiApplication>
 #include <QClipboard>
-#include <QRegularExpression>
 #endif
 
+#include <QRegularExpression>
 #include <QIcon>
 #include <QDebug>
 
 #include <KLocalizedString>
 #include <krunner/querymatch.h>
 
-static const QString s_copyToClipboardId = QStringLiteral("copyToClipboard");
+K_EXPORT_PLASMA_RUNNER_WITH_JSON(CalculatorRunner, "plasma-runner-calculator.json")
 
-K_EXPORT_PLASMA_RUNNER(calculatorrunner, CalculatorRunner)
-
-CalculatorRunner::CalculatorRunner( QObject* parent, const QVariantList &args )
+CalculatorRunner::CalculatorRunner(QObject *parent, const QVariantList &args)
     : Plasma::AbstractRunner(parent, args)
 {
-    Q_UNUSED(args)
-
     #ifdef ENABLE_QALCULATE
     m_engine = new QalculateEngine;
     setSpeed(SlowSpeed);
     #endif
 
-    setObjectName( QStringLiteral("Calculator" ));
+    setObjectName(QStringLiteral("Calculator"));
     setIgnoredTypes(Plasma::RunnerContext::Directory | Plasma::RunnerContext::File |
                          Plasma::RunnerContext::NetworkLocation | Plasma::RunnerContext::Executable |
                          Plasma::RunnerContext::ShellCommand);
@@ -61,7 +57,7 @@ CalculatorRunner::CalculatorRunner( QObject* parent, const QVariantList &args )
     addSyntax(Plasma::RunnerSyntax(QStringLiteral("=:q:"), description));
     addSyntax(Plasma::RunnerSyntax(QStringLiteral(":q:="), description));
 
-    addAction(s_copyToClipboardId, QIcon::fromTheme(QStringLiteral("edit-copy")), i18n("Copy to Clipboard"));
+    addAction(QStringLiteral("copyToClipboard"), QIcon::fromTheme(QStringLiteral("edit-copy")), i18n("Copy to Clipboard"));
 }
 
 CalculatorRunner::~CalculatorRunner()
@@ -71,7 +67,7 @@ CalculatorRunner::~CalculatorRunner()
     #endif
 }
 
-void CalculatorRunner::powSubstitutions(QString& cmd)
+void CalculatorRunner::powSubstitutions(QString &cmd)
 {
     if (cmd.contains(QLatin1String("e+"), Qt::CaseInsensitive)) {
         cmd.replace(QLatin1String("e+"), QLatin1String("*10^"), Qt::CaseInsensitive);
@@ -232,6 +228,8 @@ void CalculatorRunner::match(Plasma::RunnerContext &context)
     bool toHex = cmd.startsWith(QLatin1String("hex="));
     bool startsWithEquals = !toHex && cmd[0] == QLatin1Char('=');
 
+    userFriendlyMultiplication(cmd);
+
     if (toHex || startsWithEquals) {
         cmd.remove(0, cmd.indexOf(QLatin1Char('=')) + 1);
     } else if (cmd.endsWith(QLatin1Char('='))) {
@@ -328,8 +326,8 @@ QString CalculatorRunner::calculate(const QString& term, bool *isApproximate)
 
 void CalculatorRunner::run(const Plasma::RunnerContext &context, const Plasma::QueryMatch &match)
 {
-    Q_UNUSED(context);
-    if (match.selectedAction() == action(s_copyToClipboardId)) {
+    Q_UNUSED(context)
+    if (match.selectedAction()) {
 #ifdef ENABLE_QALCULATE
         m_engine->copyToClipboard();
 #else
@@ -342,7 +340,7 @@ QList<QAction *> CalculatorRunner::actionsForMatch(const Plasma::QueryMatch &mat
 {
     Q_UNUSED(match)
 
-    return {action(s_copyToClipboardId)};
+    return actions().values();
 }
 
 QMimeData * CalculatorRunner::mimeDataForMatch(const Plasma::QueryMatch &match)
@@ -351,6 +349,26 @@ QMimeData * CalculatorRunner::mimeDataForMatch(const Plasma::QueryMatch &match)
     QMimeData *result = new QMimeData();
     result->setText(match.text());
     return result;
+}
+
+void CalculatorRunner::userFriendlyMultiplication(QString &cmd)
+{
+    // convert multiplication sign to *
+    cmd.replace(QChar(U'\u00D7'), QChar('*'));
+
+    for (int i = 0; i < cmd.length(); ++i) {
+        if (i == 0 || i == cmd.length() - 1) {
+            continue;
+        }
+        const QChar prev = cmd.at(i - 1);
+        const QChar current = cmd.at(i);
+        const QChar next = cmd.at(i + 1);
+        if (current == QLatin1Char('x')) {
+            if (prev.isDigit() && (next.isDigit() || next == QLatin1Char(',') || next == QLatin1Char('.'))) {
+                cmd[i] = '*';
+            }
+        }
+    }
 }
 
 #include "calculatorrunner.moc"

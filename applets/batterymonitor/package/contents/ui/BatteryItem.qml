@@ -22,7 +22,7 @@ import QtQuick 2.0
 import QtQuick.Layouts 1.1
 
 import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.components 2.0 as PlasmaComponents
+import org.kde.plasma.components 3.0 as PlasmaComponents3
 import org.kde.plasma.extras 2.0 as PlasmaExtras
 import org.kde.plasma.workspace.components 2.0
 import org.kde.kcoreaddons 1.0 as KCoreAddons
@@ -46,12 +46,12 @@ Item {
         property int leftColumnWidth: 0
         width: units.gridUnit * 11
 
-        PlasmaComponents.Label {
+        PlasmaComponents3.Label {
             id: brokenBatteryLabel
             width: parent ? parent.width : implicitWidth
             wrapMode: Text.WordWrap
             text: batteryItem.isBroken && typeof model.Capacity !== "undefined" ? i18n("This battery's health is at only %1% and should be replaced. Please contact your hardware vendor for more details.", model.Capacity) : ""
-            font.pointSize: !!detailsLayout.parent.inListView ? theme.smallestFont.pointSize : theme.defaultFont.pointSize
+            font: !!detailsLayout.parent.inListView ? theme.smallestFont : theme.defaultFont
             visible: batteryItem.isBroken
         }
 
@@ -59,7 +59,7 @@ Item {
             id: detailsRepeater
             model: Logic.batteryDetails(batteryItem.battery, batterymonitor.remainingTime)
 
-            PlasmaComponents.Label {
+            PlasmaComponents3.Label {
                 id: detailsLabel
                 width: modelData.value && parent ? parent.width - detailsLayout.leftColumnWidth - units.smallSpacing : detailsLayout.leftColumnWidth + units.smallSpacing
                 wrapMode: Text.NoWrap
@@ -77,7 +77,7 @@ Item {
                         PropertyChanges {
                             target: detailsLabel
                             horizontalAlignment: modelData.value ? Text.AlignRight : Text.AlignLeft
-                            font.pointSize: theme.smallestFont.pointSize
+                            font: theme.smallestFont
                             width: parent ? parent.width / 2 : 0
                             elide: Text.ElideNone // eliding and height: implicitHeight causes loops
                         }
@@ -89,7 +89,7 @@ Item {
 
     Column {
         width: parent.width
-        spacing: 0
+        spacing: units.smallSpacing
 
         PlasmaCore.ToolTipArea {
             width: parent.width
@@ -158,39 +158,37 @@ Item {
                 Column {
                     Layout.fillWidth: true
                     Layout.alignment: batteryItem.isPresent ? Qt.AlignTop : Qt.AlignVCenter
+                    spacing: units.smallSpacing
 
                     RowLayout {
                         width: parent.width
                         spacing: units.smallSpacing
 
-                        PlasmaComponents.Label {
+                        PlasmaComponents3.Label {
                             id: batteryNameLabel
                             Layout.fillWidth: true
-                            height: implicitHeight
                             elide: Text.ElideRight
                             text: model["Pretty Name"]
                         }
 
-                        PlasmaComponents.Label {
+                        PlasmaComponents3.Label {
                             text: Logic.stringForBatteryState(model)
-                            height: implicitHeight
                             visible: model["Is Power Supply"]
                             opacity: 0.6
                         }
 
-                        PlasmaComponents.Label {
+                        PlasmaComponents3.Label {
                             id: batteryPercent
-                            height: paintedHeight
                             horizontalAlignment: Text.AlignRight
                             visible: batteryItem.isPresent
                             text: i18nc("Placeholder is battery percentage", "%1%", model.Percent)
                         }
                     }
 
-                    PlasmaComponents.ProgressBar {
+                    PlasmaComponents3.ProgressBar {
                         width: parent.width
-                        minimumValue: 0
-                        maximumValue: 100
+                        from: 0
+                        to: 100
                         visible: batteryItem.isPresent
                         value: Number(model.Percent)
                     }

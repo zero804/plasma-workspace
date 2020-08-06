@@ -1,4 +1,5 @@
 /* Copyright 2009  <Jan Gerrit Marker> <jangerrit@weiler-marker.com>
+ * Copyright 2020  <Alexander Lohnau> <alexander.lohnau@gmx.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,7 +26,7 @@
 
 #include <KRunner/AbstractRunner>
 
-#include "killrunner_config.h"
+#include "config_keys.h"
 class QAction;
 
 namespace KSysGuard
@@ -39,7 +40,7 @@ class KillRunner : public Plasma::AbstractRunner
     Q_OBJECT
 
 public:
-    KillRunner(QObject *parent, const QVariantList& args);
+    KillRunner(QObject *parent, const QVariantList &args);
     ~KillRunner() override;
 
     void match(Plasma::RunnerContext &context) override;
@@ -52,16 +53,11 @@ private Q_SLOTS:
     void cleanup();
 
 private:
-    /** @param uid the uid of the user
-      * @return the username of the user with the UID uid
-      */
-    QString getUserName(qlonglong uid);
-
     /** The trigger word */
     QString m_triggerWord;
 
     /** How to sort */
-    KillRunnerConfig::Sort m_sorting;
+    Sort m_sorting;
 
     /** process lister */
     KSysGuard::Processes *m_processes;
@@ -71,6 +67,12 @@ private:
 
     /** timer for retrying the cleanup due to lock contention */
     QTimer m_delayedCleanupTimer;
+
+    /** Reuse actions */
+    QList<QAction *> m_actionList;
+
+    /** Reuse value */
+    bool m_hasTrigger;
 };
 
 #endif

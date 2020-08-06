@@ -22,6 +22,7 @@
 #include "jobsmodel_p.h"
 
 #include "notifications.h"
+#include "utils_p.h"
 
 #include <QDebug>
 #include <QScopedPointer>
@@ -92,7 +93,7 @@ bool JobsModel::isValid() const
 
 QVariant JobsModel::data(const QModelIndex &index, int role) const
 {
-    if (!checkIndex(index)) {
+    if (!checkIndex(index, QAbstractItemModel::CheckIndexOption::IndexIsValid)) {
         return QVariant();
     }
 
@@ -149,7 +150,7 @@ QVariant JobsModel::data(const QModelIndex &index, int role) const
 
 bool JobsModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
-    if (!checkIndex(index)) {
+    if (!checkIndex(index, QAbstractItemModel::CheckIndexOption::IndexIsValid)) {
         return false;
     }
 
@@ -176,37 +177,42 @@ int JobsModel::rowCount(const QModelIndex &parent) const
     return d->m_jobViews.count();
 }
 
+QHash<int, QByteArray> JobsModel::roleNames() const
+{
+    return Utils::roleNames();
+}
+
 void JobsModel::close(const QModelIndex &idx)
 {
-    if (checkIndex(idx)) {
+    if (checkIndex(idx, QAbstractItemModel::CheckIndexOption::IndexIsValid)) {
         d->removeAt(idx.row());
     }
 }
 
 void JobsModel::expire(const QModelIndex &idx)
 {
-    if (checkIndex(idx)) {
+    if (checkIndex(idx, QAbstractItemModel::CheckIndexOption::IndexIsValid)) {
         d->m_jobViews.at(idx.row())->setExpired(true);
     }
 }
 
 void JobsModel::suspend(const QModelIndex &idx)
 {
-    if (checkIndex(idx)) {
+    if (checkIndex(idx, QAbstractItemModel::CheckIndexOption::IndexIsValid)) {
         d->m_jobViews.at(idx.row())->suspend();
     }
 }
 
 void JobsModel::resume(const QModelIndex &idx)
 {
-    if (checkIndex(idx)) {
+    if (checkIndex(idx, QAbstractItemModel::CheckIndexOption::IndexIsValid)) {
         d->m_jobViews.at(idx.row())->resume();
     }
 }
 
 void JobsModel::kill(const QModelIndex &idx)
 {
-    if (checkIndex(idx)) {
+    if (checkIndex(idx, QAbstractItemModel::CheckIndexOption::IndexIsValid)) {
         d->m_jobViews.at(idx.row())->kill();
     }
 }

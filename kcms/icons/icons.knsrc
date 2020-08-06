@@ -1,0 +1,26 @@
+[KNewStuff3]
+Name=Icons
+Name[az]=Nişanlar
+Name[ca]=Icones
+Name[cs]=Ikony
+Name[es]=Iconos
+Name[eu]=Ikonoak
+Name[fi]=Kuvakkeet
+Name[fr]=Icônes
+Name[it]=Icone
+Name[nl]=Pictogrammen
+Name[pt]=Ícones
+Name[pt_BR]=Ícones
+Name[sk]=Ikony
+Name[sl]=Ikone
+Name[sv]=Ikoner
+Name[uk]=Піктограми
+Name[x-test]=xxIconsxx
+
+ProvidersUrl=https://autoconfig.kde.org/ocs/providers.xml
+Categories=KDE Icon Theme
+TargetDir=icons
+Uncompress=true
+RemoveDeadEntries=true
+
+AdoptionCommand=@CMAKE_INSTALL_FULL_LIBEXECDIR@/plasma-changeicons %d

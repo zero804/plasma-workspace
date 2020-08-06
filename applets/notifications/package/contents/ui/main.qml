@@ -78,7 +78,7 @@ Item {
                 // Show until time if valid but not if too far in the future
                 // TODO check app inhibition, too
                 if (inhibitedUntilValid
-                        && inhibitedUntil.getTime() - new Date().getTime() < 365 * 24 * 60 * 60 * 1000 /* 1 year*/) {
+                        && inhibitedUntil.getTime() - new Date().getTime() < 100 * 24 * 60 * 60 * 1000 /* 100 days*/) {
                         lines.push(i18n("Do not disturb until %1",
                                      KCoreAddons.Format.formatRelativeDateTime(inhibitedUntil, Locale.ShortFormat)));
                 } else {
@@ -151,7 +151,7 @@ Item {
     }
 
     function closePassivePlasmoid() {
-        if (plasmoid.status !== PlasmaCore.Types.PassiveStatus) {
+        if (plasmoid.status !== PlasmaCore.Types.PassiveStatus && plasmoid.hideOnWindowDeactivate) {
             plasmoid.expanded = false;
         }
     }
@@ -164,7 +164,7 @@ Item {
     }
 
     function action_openKcm() {
-        KQCAddons.KCMShell.open("kcm_notifications");
+        KQCAddons.KCMShell.openSystemSettings("kcm_notifications");
     }
 
     Component.onCompleted: {

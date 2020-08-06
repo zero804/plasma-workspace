@@ -1,9 +1,6 @@
 add_definitions(-DTRANSLATION_DOMAIN=\"systemmonitor\")
 
 add_definitions("-DQT_NO_CAST_FROM_ASCII -DQT_NO_CAST_TO_ASCII")
-# clear setting pulled in from finding KF5::KDELibs4Support before resetting
-remove_definitions(-DQT_DISABLE_DEPRECATED_BEFORE=0)
-add_definitions(-DQT_DISABLE_DEPRECATED_BEFORE=0x060000)
 add_definitions(-DQT_NO_URL_CAST_FROM_STRING)
 
 set (KDED_KSYSGUARD_SRCS
@@ -25,7 +22,7 @@ install(TARGETS ksysguard DESTINATION ${KDE_INSTALL_PLUGINDIR}/kf5/kded)
 add_executable(systemmonitor ksystemactivitydialog.cpp main.cpp)
 
 target_link_libraries(systemmonitor
-    KF5::ProcessUi
+    KSysGuard::ProcessUi
     KF5::ConfigCore
     KF5::I18n
     KF5::XmlGui

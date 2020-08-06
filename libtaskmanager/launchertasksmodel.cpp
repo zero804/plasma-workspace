@@ -22,7 +22,7 @@ License along with this library.  If not, see <http://www.gnu.org/licenses/>.
 #include "tasktools.h"
 
 #include <KDesktopFile>
-#include <KRun>
+#include <KNotificationJobUiDelegate>
 #include <KService>
 #include <KStartupInfo>
 #include <KSycoca>
@@ -30,6 +30,8 @@ License along with this library.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <KActivities/Consumer>
 #include <KActivities/ResourceInstance>
+
+#include <KIO/ApplicationLauncherJob>
 
 #include <config-X11.h>
 
@@ -148,7 +150,7 @@ bool LauncherTasksModel::Private::requestAddLauncherToActivities(const QUrl &_ur
         return false;
     }
 
-    const auto activities = ActivitiesSet::fromList(_activities);
+    const auto activities = ActivitiesSet(_activities.cbegin(), _activities.cend());
 
     if (url.isLocalFile() && KDesktopFile::isDesktopFile(url.toLocalFile())) {
         KDesktopFile f(url.toLocalFile());
@@ -404,7 +406,7 @@ void LauncherTasksModel::setLauncherList(const QStringList &serializedLaunchers)
         std::tie(url, _activities) =
             deserializeLauncher(serializedLauncher);
 
-        auto activities = ActivitiesSet::fromList(_activities);
+        auto activities = ActivitiesSet(_activities.cbegin(), _activities.cend());
 
         // Is url is not valid, ignore it
         if (!isValidLauncherUrl(url)) {
@@ -599,8 +601,11 @@ void LauncherTasksModel::requestOpenUrls(const QModelIndex &index, const QList<Q
         return;
     }
 
-    KRun::runApplication(*service, urls, nullptr, KRun::RunFlags(), QString(),
-                         KStartupInfo::createNewStartupIdForTimestamp(timeStamp));
+    auto *job = new KIO::ApplicationLauncherJob(service);
+    job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoErrorHandlingEnabled));
+    job->setUrls(urls);
+    job->setStartupId(KStartupInfo::createNewStartupIdForTimestamp(timeStamp));
+    job->start();
 
     KActivities::ResourceInstance::notifyAccessed(QUrl(QStringLiteral("applications:") + service->storageId()),
         QStringLiteral("org.kde.libtaskmanager"));

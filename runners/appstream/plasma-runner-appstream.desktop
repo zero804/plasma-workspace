@@ -1,6 +1,7 @@
 [Desktop Entry]
 Name=Software Center
 Name[ast]=Centru de software
+Name[az]=Proqram Təminatı Mərkəzi
 Name[ca]=Centre de programari
 Name[ca@valencia]=Centre de programari
 Name[cs]=Centrum softwaru
@@ -43,6 +44,7 @@ Name[zh_CN]=软件中心
 Name[zh_TW]=軟體中心
 Comment=Lets you find software
 Comment[ast]=Déxate alcontrar software
+Comment[az]=Tətbiqləri tapmağa sizə imkan verir
 Comment[ca]=Permet cercar programari
 Comment[ca@valencia]=Permet buscar programari
 Comment[cs]=Umožní vám hledat software
@@ -84,8 +86,6 @@ Comment[zh_TW]=讓您尋找軟體
 Icon=applications-other
 Type=Service
 X-KDE-ServiceTypes=Plasma/Runner
-
-X-KDE-Library=krunner_appstream
 X-KDE-PluginInfo-Author=Aleix Pol Gonzalez
 X-KDE-PluginInfo-Email=aleixpol@blue-systems.com
 X-KDE-PluginInfo-Version=0.1

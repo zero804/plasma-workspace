@@ -26,14 +26,16 @@
 
 #include <KIO/CommandLauncherJob>
 
-K_EXPORT_PLASMA_RUNNER(shell, ShellRunner)
+K_EXPORT_PLASMA_RUNNER_WITH_JSON(ShellRunner, "plasma-runner-shell.json")
 
 ShellRunner::ShellRunner(QObject *parent, const QVariantList &args)
     : Plasma::AbstractRunner(parent, args)
 {
     setObjectName(QStringLiteral("Command"));
     setPriority(AbstractRunner::HighestPriority);
-    m_enabled = KAuthorized::authorize(QStringLiteral("run_command")) && KAuthorized::authorize(QStringLiteral("shell_access"));
+    // If the runner is not authorized we can suspend it
+    bool enabled = KAuthorized::authorize(QStringLiteral("run_command")) && KAuthorized::authorize(QStringLiteral("shell_access"));
+    suspendMatching(!enabled);
     setIgnoredTypes(Plasma::RunnerContext::Directory | Plasma::RunnerContext::File |
                     Plasma::RunnerContext::NetworkLocation | Plasma::RunnerContext::UnknownType |
                     Plasma::RunnerContext::Help);
@@ -51,10 +53,6 @@ ShellRunner::~ShellRunner()
 
 void ShellRunner::match(Plasma::RunnerContext &context)
 {
-    if (!context.isValid() || !m_enabled) {
-        return;
-    }
-
     const QString term = context.query();
     Plasma::QueryMatch match(this);
     match.setId(term);
@@ -73,9 +71,7 @@ void ShellRunner::run(const Plasma::RunnerContext &context, const Plasma::QueryM
     }
 
     auto *job = new KIO::CommandLauncherJob(context.query());
-    auto *delegate = new KNotificationJobUiDelegate;
-    delegate->setAutoErrorHandlingEnabled(true);
-    job->setUiDelegate(delegate);
+    job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoHandlingEnabled));
     job->start();
 }
 

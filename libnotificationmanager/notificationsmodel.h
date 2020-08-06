@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Shah Bhushan <bshah@kde.org>
  * Copyright 2018-2019 Kai Uwe Broulik <kde@privat.broulik.de>
  *
  * This library is free software; you can redistribute it and/or
@@ -20,55 +21,27 @@
 
 #pragma once
 
-#include <QAbstractListModel>
-#include <QScopedPointer>
-#include <QSharedPointer>
+#include "abstractnotificationsmodel.h"
 
-#include "notifications.h"
+namespace NotificationManager {
 
-namespace NotificationManager
+class NotificationsModel : public AbstractNotificationsModel
 {
-
-class NotificationsModel : public QAbstractListModel
-{
-    Q_OBJECT
-
 public:
-    ~NotificationsModel() override;
-
     using Ptr = QSharedPointer<NotificationsModel>;
     static Ptr createNotificationsModel();
+    void expire(uint notificationId) override;
+    void close(uint notificationId) override;
 
-    QDateTime lastRead() const;
-    void setLastRead(const QDateTime &lastRead);
+    void invokeDefaultAction(uint notificationId) override;
+    void invokeAction(uint notificationId, const QString &actionName) override;
+    void reply(uint notificationId, const QString &text) override;
 
-    QVariant data(const QModelIndex &index, int role) const override;
-    bool setData(const QModelIndex &index, const QVariant &value, int role) override;
-    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-
-    void expire(uint notificationId);
-    void close(uint notificationId);
     void configure(uint notificationId);
     void configure(const QString &desktopEntry, const QString &notifyRcName, const QString &eventId);
-    void invokeDefaultAction(uint notificationId);
-    void invokeAction(uint notificationId, const QString &actionName);
-    void reply(uint notificationId, const QString &text);
-
-    void startTimeout(uint notificationId);
-    void stopTimeout(uint notificationId);
-
-    void clear(Notifications::ClearFlags flags);
-
-signals:
-    void lastReadChanged();
 
 private:
-    class Private;
-    QScopedPointer<Private> d;
-
     NotificationsModel();
-    Q_DISABLE_COPY(NotificationsModel)
-
 };
 
-} // namespace NotificationManager
+}

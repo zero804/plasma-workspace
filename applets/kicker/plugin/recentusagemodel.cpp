@@ -37,8 +37,10 @@
 
 #include <KActivities/ResourceInstance>
 #include <KFileItem>
+#include <KIO/ApplicationLauncherJob>
 #include <KLocalizedString>
 #include <KMimeTypeTrader>
+#include <KNotificationJobUiDelegate>
 #include <KRun>
 #include <KService>
 #include <KStartupInfo>
@@ -81,7 +83,9 @@ InvalidAppsFilterProxy::~InvalidAppsFilterProxy()
 void InvalidAppsFilterProxy::connectNewFavoritesModel()
 {
     KAStatsFavoritesModel* favoritesModel = static_cast<KAStatsFavoritesModel *>(m_parentModel->favoritesModel());
-    connect(favoritesModel, &KAStatsFavoritesModel::favoritesChanged, this, &QSortFilterProxyModel::invalidate);
+    if (favoritesModel) {
+        connect(favoritesModel, &KAStatsFavoritesModel::favoritesChanged, this, &QSortFilterProxyModel::invalidate);
+    }
 
     invalidate();
 }
@@ -164,7 +168,7 @@ QString RecentUsageModel::description() const
             return i18n("Applications");
         case OnlyDocs:
         default:
-            return i18n("Documents");
+            return i18n("Files");
     }
 }
 
@@ -217,7 +221,7 @@ QVariant RecentUsageModel::appData(const QString &resource, int role) const
             return AppEntry::nameFromService(service, AppEntry::NameOnly);
         }
     } else if (role == Qt::DecorationRole) {
-        return QIcon::fromTheme(service->icon(), QIcon::fromTheme(QStringLiteral("unknown")));
+        return service->icon();
     } else if (role == Kicker::DescriptionRole) {
         return service->comment();
     } else if (role == Kicker::GroupRole) {
@@ -296,7 +300,7 @@ QVariant RecentUsageModel::docData(const QString &resource, int role) const
         }
         return QIcon::fromTheme(fileItem.iconName(), QIcon::fromTheme(QStringLiteral("unknown")));
     } else if (role == Kicker::GroupRole) {
-        return i18n("Documents");
+        return i18n("Files");
     } else if (role == Kicker::FavoriteIdRole || role == Kicker::UrlRole) {
         return url.toString();
     } else if (role == Kicker::DescriptionRole) {
@@ -332,7 +336,7 @@ QVariant RecentUsageModel::docData(const QString &resource, int role) const
         QVariantMap openParentFolder = Kicker::createActionItem(i18n("Open Containing Folder"), QStringLiteral("folder-open"), QStringLiteral("openParentFolder"));
         actionList << openParentFolder;
 
-        QVariantMap forgetAction = Kicker::createActionItem(i18n("Forget Document"), QStringLiteral("edit-clear-history"), QStringLiteral("forget"));
+        QVariantMap forgetAction = Kicker::createActionItem(i18n("Forget File"), QStringLiteral("edit-clear-history"), QStringLiteral("forget"));
         actionList << forgetAction;
 
         QVariantMap forgetAllAction = Kicker::createActionItem(forgetAllActionName(), QStringLiteral("edit-clear-history"), QStringLiteral("forgetAll"));
@@ -377,8 +381,10 @@ bool RecentUsageModel::trigger(int row, const QString &actionId, const QVariant 
         }
 #endif
 
-        // TODO Once we depend on KDE Frameworks 5.24 and D1902 is merged, use KRun::runApplication instead
-        KRun::runService(*service, {}, nullptr, true, {}, KStartupInfo::createNewStartupIdForTimestamp(timeStamp));
+        auto *job = new KIO::ApplicationLauncherJob(service);
+        job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoHandlingEnabled));
+        job->setStartupId(KStartupInfo::createNewStartupIdForTimestamp(timeStamp));
+        job->start();
 
         KActivities::ResourceInstance::notifyAccessed(QUrl(QStringLiteral("applications:") + storageId),
             QStringLiteral("org.kde.plasma.kicker"));
@@ -407,6 +413,14 @@ bool RecentUsageModel::trigger(int row, const QString &actionId, const QVariant 
         }
 
         return false;
+    } else if (actionId == QLatin1String("_kicker_jumpListAction")) {
+        const QString storageId = sourceModel()->data(sourceModel()->index(row, 0), ResultModel::ResourceRole)
+                                .toString().section(QLatin1Char(':'), 1);
+        KService::Ptr service = KService::serviceByStorageId(storageId);
+        service->setExec(argument.toString());
+        KIO::ApplicationLauncherJob *job = new KIO::ApplicationLauncherJob(service);
+        job->start();
+        return true;
     } else if (withinBounds) {
         const QString &resource = resourceAt(row);
 
@@ -459,7 +473,7 @@ QString RecentUsageModel::forgetAllActionName() const
             return i18n("Forget All Applications");
         case OnlyDocs:
         default:
-            return i18n("Forget All Documents");
+            return i18n("Forget All Files");
     }
 }
 
@@ -503,7 +517,7 @@ void RecentUsageModel::refresh()
     auto query = UsedResources
                     | (m_ordering == Recent ? RecentlyUsedFirst : HighScoredFirst)
                     | Agent::any()
-                    | Type::any()
+                    | (m_usage == OnlyDocs ? Type::files() : Type::any())
                     | Activity::current();
 
     switch (m_usage) {

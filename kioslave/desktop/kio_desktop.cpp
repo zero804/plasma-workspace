@@ -22,9 +22,9 @@
 #include <KConfigGroup>
 #include <KDesktopFile>
 #include <KDirNotify>
+#include <KDiskFreeSpaceInfo>
+#include <KIO/UDSEntry>
 #include <KLocalizedString>
-
-#include <kio/udsentry.h>
 
 #include <QCoreApplication>
 #include <QFile>
@@ -226,3 +226,27 @@ void DesktopProtocol::rename(const QUrl &_src, const QUrl &_dest, KIO::JobFlags 
     }
 }
 
+void DesktopProtocol::virtual_hook(int id, void *data)
+{
+    switch(id) {
+        case SlaveBase::GetFileSystemFreeSpace: {
+            QUrl *url = static_cast<QUrl *>(data);
+            fileSystemFreeSpace(*url);
+        }   break;
+        default:
+            SlaveBase::virtual_hook(id, data);
+    }
+}
+
+void DesktopProtocol::fileSystemFreeSpace(const QUrl &url)
+{
+    const QString desktopPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
+    const KDiskFreeSpaceInfo spaceInfo = KDiskFreeSpaceInfo::freeSpaceInfo(desktopPath);
+    if (spaceInfo.isValid()) {
+        setMetaData(QStringLiteral("total"), QString::number(spaceInfo.size()));
+        setMetaData(QStringLiteral("available"), QString::number(spaceInfo.available()));
+        finished();
+    } else {
+        error(KIO::ERR_CANNOT_STAT, desktopPath);
+    }
+}

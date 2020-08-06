@@ -155,9 +155,9 @@ void setupCursor(bool wayland)
     const KConfig cfg(QStringLiteral("kcminputrc"));
     const KConfigGroup inputCfg = cfg.group("Mouse");
 
-    const auto kcminputrc_mouse_cursorsize = inputCfg.readEntry("cursorSize", QString());
+    const auto kcminputrc_mouse_cursorsize = inputCfg.readEntry("cursorSize", 24);
     const auto kcminputrc_mouse_cursortheme = inputCfg.readEntry("cursorTheme", QStringLiteral("breeze_cursors"));
-    if (!kcminputrc_mouse_cursortheme.isEmpty() || !kcminputrc_mouse_cursorsize.isEmpty()) {
+    if (!kcminputrc_mouse_cursortheme.isEmpty()) {
 #ifdef XCURSOR_PATH
         QByteArray path(XCURSOR_PATH);
         path.replace("$XCURSOR_PATH", qgetenv("XCURSOR_PATH"));
@@ -166,20 +166,24 @@ void setupCursor(bool wayland)
     }
 
     //TODO: consider linking directly
-    const int applyMouseStatus = wayland ? 0 : runSync(QStringLiteral("kapplymousetheme"), { kcminputrc_mouse_cursortheme, kcminputrc_mouse_cursorsize });
+    const int applyMouseStatus = wayland ? 0 : runSync(QStringLiteral("kapplymousetheme"), { kcminputrc_mouse_cursortheme, QString::number(kcminputrc_mouse_cursorsize) });
     if (applyMouseStatus == 10) {
         qputenv("XCURSOR_THEME", "breeze_cursors");
     } else if (!kcminputrc_mouse_cursortheme.isEmpty()) {
         qputenv("XCURSOR_THEME", kcminputrc_mouse_cursortheme.toUtf8());
     }
-    if (!kcminputrc_mouse_cursorsize.isEmpty()) {
-        qputenv("XCURSOR_SIZE", kcminputrc_mouse_cursorsize.toUtf8());
-    }
+    qputenv("XCURSOR_SIZE", QByteArray::number(kcminputrc_mouse_cursorsize));
 }
 
 // Source scripts found in <config locations>/plasma-workspace/env/*.sh
 // (where <config locations> correspond to the system and user's configuration
 // directory.
+//
+// Scripts are sourced in reverse order of priority of their directory, as defined
+// by `QStandardPaths::standardLocations`. This ensures that high-priority scripts
+// (such as those in the user's home directory) are sourced last and take precedence
+// over lower-priority scripts (such as system defaults). Scripts in the same 
+// directory are sourced in lexical order of their filename.
 //
 // This is where you can define environment variables that will be available to
 // all KDE programs, so this is where you can run agents using e.g. eval `ssh-agent`
@@ -193,10 +197,17 @@ void setupCursor(bool wayland)
 void runEnvironmentScripts()
 {
     QStringList scripts;
-    const auto locations = QStandardPaths::locateAll(QStandardPaths::GenericConfigLocation, QStringLiteral("plasma-workspace/env"), QStandardPaths::LocateDirectory);
-    for (const QString & location : locations) {
-        QDir dir(location);
-        const auto dirScripts = dir.entryInfoList({QStringLiteral("*.sh")});
+    auto locations = QStandardPaths::standardLocations(QStandardPaths::GenericConfigLocation);
+
+    //`standardLocations()` returns locations sorted by "order of priority". We iterate in reverse
+    // order so that high-priority scripts are sourced last and their modifications take precedence.
+    for (auto loc = locations.crbegin(); loc != locations.crend(); loc++) {
+        QDir dir(*loc);
+        if (! dir.cd(QStringLiteral("./plasma-workspace/env"))) {
+            // Skip location if plasma-workspace/env subdirectory does not exist
+            continue;
+        }
+        const auto dirScripts = dir.entryInfoList({QStringLiteral("*.sh")}, QDir::Files, QDir::Name);
         for (const auto script : dirScripts) {
             scripts << script.absoluteFilePath();
         }
@@ -323,17 +334,6 @@ QProcess* setupKSplash()
     return p;
 }
 
-void setupGSLib()
-// Get Ghostscript to look into user's KDE fonts dir for additional Fontmap
-{
-    const QByteArray usr_fdir = QFile::encodeName(QDir::home().absoluteFilePath(QStringLiteral(".fonts")));
-    if (qEnvironmentVariableIsSet("GS_LIB")) {
-        qputenv("GS_LIB", usr_fdir + ':' + qgetenv("GS_LIB"));
-    } else {
-        qputenv("GS_LIB", usr_fdir);
-    }
-}
-
 bool startPlasmaSession(bool wayland)
 {
     OrgKdeKSplashInterface iface(QStringLiteral("org.kde.KSplash"), QStringLiteral("/KSplash"), QDBusConnection::sessionBus());
@@ -373,7 +373,7 @@ bool startPlasmaSession(bool wayland)
     // We want to exit when both ksmserver and plasma-session-shutdown have finished
     // This also closes if ksmserver crashes unexpectedly, as in those cases plasma-shutdown is not running
     serviceWatcher.addWatchedService(QStringLiteral("org.kde.ksmserver"));
-    serviceWatcher.addWatchedService(QStringLiteral("org.kde.shutdown"));
+    serviceWatcher.addWatchedService(QStringLiteral("org.kde.Shutdown"));
     serviceWatcher.setWatchMode(QDBusServiceWatcher::WatchForUnregistration);
 
     QObject::connect(&startPlasmaSession, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), [&rc, &e](int exitCode, QProcess::ExitStatus) {

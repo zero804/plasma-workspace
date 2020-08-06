@@ -32,8 +32,8 @@ import QtGraphicalEffects 1.0
 Item {
     id: expandedRepresentation
 
-    Layout.minimumWidth: units.gridUnit * 15
-    Layout.minimumHeight: units.gridUnit * 23
+    Layout.minimumWidth: units.gridUnit * 14
+    Layout.minimumHeight: units.gridUnit * 14
     Layout.preferredWidth: Layout.minimumWidth * 1.5
     Layout.preferredHeight: Layout.minimumHeight * 1.5
 
@@ -165,9 +165,9 @@ Item {
                     layer.effect: GaussianBlur {
                         cached: true
 
-                        radius: 256
+                        radius: 128
                         deviation: 12
-                        samples: 129
+                        samples: 63
 
                         transparentBorder: false
                     }
@@ -175,9 +175,14 @@ Item {
             }
             RowLayout { // Album Art + Details
                 id: albumRow
-                spacing: units.largeSpacing
 
-                anchors.fill: parent
+                anchors {
+                    fill: parent
+                    leftMargin: units.largeSpacing
+                    rightMargin: units.largeSpacing
+                }
+
+                spacing: units.largeSpacing
 
                 Item {
                     Layout.fillWidth: true
@@ -187,11 +192,7 @@ Item {
                     Image { // Album Art
                         id: albumArt
 
-                        anchors {
-                            fill: parent
-                            margins: units.smallSpacing
-                            leftMargin: units.largeSpacing
-                        }
+                        anchors.fill: parent
 
                         visible: !!root.track && status === Image.Ready
 
@@ -239,6 +240,7 @@ Item {
                         textFormat: Text.PlainText
                         wrapMode: Text.Wrap
                         fontSizeMode: Text.VerticalFit
+                        elide: Text.ElideRight
 
                         text: root.track || i18n("No media playing")
 
@@ -255,6 +257,7 @@ Item {
                         textFormat: Text.PlainText
                         wrapMode: Text.Wrap
                         fontSizeMode: Text.VerticalFit
+                        elide: Text.ElideRight
 
                         text: root.artist
                         Layout.fillWidth: true
@@ -269,6 +272,7 @@ Item {
                         textFormat: Text.PlainText
                         wrapMode: Text.Wrap
                         fontSizeMode: Text.VerticalFit
+                        elide: Text.ElideRight
 
                         visible: text.length !== 0
                         text: {

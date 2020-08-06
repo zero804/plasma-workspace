@@ -30,15 +30,13 @@
 #include <KRun>
 #include <KLocalizedString>
 
-K_EXPORT_PLASMA_RUNNER(placesrunner, PlacesRunner)
+K_EXPORT_PLASMA_RUNNER_WITH_JSON(PlacesRunner, "plasma-runner-places.json")
 
 //Q_DECLARE_METATYPE(Plasma::RunnerContext)
 PlacesRunner::PlacesRunner(QObject* parent, const QVariantList &args)
         : Plasma::AbstractRunner(parent, args)
 {
-//    qRegisterMetaType
-    Q_UNUSED(args)
-    setObjectName( QStringLiteral("Places" ));
+    setObjectName(QStringLiteral("Places"));
     Plasma::RunnerSyntax defaultSyntax(i18n("places"), i18n("Lists all file manager locations"));
     setDefaultSyntax(defaultSyntax);
     addSyntax(defaultSyntax);

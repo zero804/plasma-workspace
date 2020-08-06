@@ -22,7 +22,7 @@ import QtQuick.Layouts 1.1
 
 import org.kde.plasma.plasmoid 2.0
 import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.components 2.0 as PlasmaComponents
+import org.kde.plasma.components 3.0 as PlasmaComponents3
 import org.kde.plasma.extras 2.0 as PlasmaExtras
 
 ColumnLayout {
@@ -76,31 +76,28 @@ ColumnLayout {
         }
     }
 
-    PlasmaExtras.Heading {
-        id: emptyHint
-        Layout.fillWidth: true
-        level: 3
-        opacity: 0.6
-        visible: clipboardMenu.model.count === 0 && filter.length === 0
-        text: i18n("Clipboard is empty")
-    }
+    property var header: PlasmaExtras.PlasmoidHeading {
+        RowLayout {
+            anchors.fill: parent
+            enabled: clipboardMenu.model.count > 0
 
-    RowLayout {
-        Layout.fillWidth: true
-        visible: !emptyHint.visible
+            PlasmaComponents3.TextField {
+                id: filter
+                placeholderText: i18n("Search...")
+                clearButtonShown: true
+                Layout.fillWidth: true
+            }
+            PlasmaComponents3.ToolButton {
+                icon.name: "edit-clear-history"
+                onClicked: clipboardSource.service("", "clearHistory")
 
-        PlasmaComponents.TextField {
-            id: filter
-            placeholderText: i18n("Search...")
-            clearButtonShown: true
-            Layout.fillWidth: true
-        }
-        PlasmaComponents.ToolButton {
-            iconSource: "edit-clear-history"
-            tooltip: i18n("Clear history")
-            onClicked: clipboardSource.service("", "clearHistory")
+                PlasmaComponents3.ToolTip {
+                    text: i18n("Clear history")
+                }
+            }
         }
     }
+
     Menu {
         id: clipboardMenu
         model: PlasmaCore.SortFilterModel {
@@ -108,15 +105,26 @@ ColumnLayout {
             filterRole: "DisplayRole"
             filterRegExp: filter.text
         }
-        supportsBarcodes: clipboardSource.data["clipboard"]["supportsBarcodes"]
+        supportsBarcodes: {
+            try {
+                let prisonTest = Qt.createQmlObject("import QtQml 2.0; import org.kde.prison 1.0; QtObject {}", this);
+                prisonTest.destroy();
+            } catch (e) {
+                console.log("Barcodes not supported:", e);
+                return false;
+            }
+            return true;
+        }
         Layout.fillWidth: true
         Layout.fillHeight: true
+        Layout.topMargin: units.smallSpacing
         onItemSelected: clipboardSource.service(uuid, "select")
         onRemove: clipboardSource.service(uuid, "remove")
         onEdit: clipboardSource.edit(uuid)
         onBarcode: {
-            var page = stack.push(barcodePage);
-            page.show(uuid);
+            stack.push(barcodePage, {
+                text: text
+            });
         }
         onAction: {
             clipboardSource.service(uuid, "action")

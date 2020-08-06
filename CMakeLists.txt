@@ -1,15 +1,18 @@
 cmake_minimum_required(VERSION 3.0)
 
 project(plasma-workspace)
-set(PROJECT_VERSION "5.18.80")
+set(PROJECT_VERSION "5.19.80")
 set(PROJECT_VERSION_MAJOR 5)
 
 set(QT_MIN_VERSION "5.14.0")
-set(KF5_MIN_VERSION "5.66.0")
+set(KF5_MIN_VERSION "5.72.0")
 set(INSTALL_SDDM_THEME TRUE)
-find_package(Qt5 ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS Widgets Quick QuickWidgets Concurrent Test Network)
+find_package(Qt5 ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS Svg Widgets Quick QuickWidgets Concurrent Test Network)
 find_package(ECM ${KF5_MIN_VERSION} REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
+
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(KDEInstallDirs)
 include(KDECMakeSettings)
@@ -26,9 +29,9 @@ include(KDEPackageAppTemplates)
 include(KDEClangFormat)
 
 find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS
-                    Plasma DocTools Runner NotifyConfig Su NewStuff Wallet
+                    Plasma DocTools Runner Notifications NotifyConfig Su NewStuff Wallet
                     IdleTime Declarative I18n KCMUtils TextWidgets KDELibs4Support Crash GlobalAccel
-                    DBusAddons Wayland CoreAddons People ActivitiesStats)
+                    DBusAddons Wayland CoreAddons People ActivitiesStats Activities KIO)
 find_package(KDED CONFIG REQUIRED)
 
 find_package(KF5NetworkManagerQt ${KF5_MIN_VERSION})
@@ -52,7 +55,7 @@ set_package_properties(KF5QuickCharts PROPERTIES
 # WARNING PlasmaQuick provides unversioned CMake config
 find_package(KUserFeedback)
 find_package(KF5 REQUIRED COMPONENTS PlasmaQuick)
-find_package(KF5 REQUIRED COMPONENTS SysGuard)
+find_package(KSysGuard CONFIG REQUIRED)
 find_package(KF5 REQUIRED COMPONENTS Package)
 
 find_package(KF5Baloo)
@@ -77,11 +80,6 @@ find_package(Phonon4Qt5 4.6.60 REQUIRED NO_MODULE)
 set_package_properties(Phonon4Qt5 PROPERTIES
    DESCRIPTION "Qt-based audio library"
    TYPE REQUIRED)
-find_package(KF5Activities ${KF5_MIN_VERSION})
-set_package_properties(KF5Activities PROPERTIES DESCRIPTION "management of Plasma activities"
-                       TYPE OPTIONAL
-                       PURPOSE "Needed by activity related plasmoids."
-                      )
 
 find_package(ZLIB)
 set_package_properties(ZLIB PROPERTIES DESCRIPTION "Support for gzip compressed files and data streams"
@@ -94,6 +92,14 @@ set_package_properties(X11 PROPERTIES DESCRIPTION "X11 libraries"
                         URL "https://www.x.org"
                         TYPE OPTIONAL
                         PURPOSE "Required for building the X11 based workspace")
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(PipeWire IMPORTED_TARGET libpipewire-0.3)
+add_feature_info(PipeWire PipeWire_FOUND "Required for Wayland screencasting")
+
+find_package(QtWaylandScanner REQUIRED)
+find_package(PlasmaWaylandProtocols REQUIRED)
+find_package(Wayland REQUIRED COMPONENTS Client)
 
 if(X11_FOUND)
   find_package(XCB MODULE REQUIRED COMPONENTS XCB RANDR)

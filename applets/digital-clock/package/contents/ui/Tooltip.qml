@@ -20,7 +20,7 @@
 import QtQuick 2.0
 import QtQuick.Layouts 1.1
 import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.components 2.0 as PlasmaComponents
+import org.kde.plasma.components 3.0 as PlasmaComponents3
 import org.kde.plasma.extras 2.0 as PlasmaExtras
 
 Item {
@@ -43,29 +43,34 @@ Item {
             margins: units.gridUnit / 2
         }
 
+        spacing: 0
+
         PlasmaExtras.Heading {
             id: tooltipMaintext
             level: 3
             Layout.minimumWidth: Math.min(implicitWidth, preferredTextWidth)
             Layout.maximumWidth: preferredTextWidth
             elide: Text.ElideRight
-            text: Qt.formatDate(tzDate,"dddd")
+            text: clocks.visible ? Qt.formatDate(tzDate, Locale.LongFormat) : Qt.formatDate(tzDate,"dddd")
         }
 
-        PlasmaComponents.Label {
+        PlasmaComponents3.Label {
             id: tooltipSubtext
             Layout.minimumWidth: Math.min(implicitWidth, preferredTextWidth)
             Layout.maximumWidth: preferredTextWidth
             text: Qt.formatDate(tzDate, dateFormatString)
             opacity: 0.6
+            visible: !clocks.visible
         }
 
         GridLayout {
+            id: clocks
             Layout.minimumWidth: Math.min(implicitWidth, preferredTextWidth)
             Layout.maximumWidth: preferredTextWidth
             Layout.maximumHeight: childrenRect.height
             columns: 2
             visible: plasmoid.configuration.selectedTimeZones.length > 1
+            rowSpacing: 0
 
             Repeater {
                 model: {
@@ -83,7 +88,7 @@ Item {
                     return timezones;
                 }
 
-                PlasmaComponents.Label {
+                PlasmaComponents3.Label {
                     id: timezone
                     // Layout.fillWidth is buggy here
                     Layout.alignment: index % 2 === 0 ? Qt.AlignRight : Qt.AlignLeft
@@ -91,7 +96,6 @@ Item {
                     wrapMode: Text.NoWrap
                     text: index % 2 == 0 ? nameForZone(modelData) : timeForZone(modelData)
                     font.weight: modelData === plasmoid.configuration.lastSelectedTimezone ? Font.Bold : Font.Normal
-                    height: paintedHeight
                     elide: Text.ElideNone
                     opacity: 0.6
                 }

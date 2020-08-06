@@ -23,7 +23,7 @@ import QtQuick.Layouts 1.1
 import QtQuick.Window 2.2
 
 import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.components 2.0 as PlasmaComponents
+import org.kde.plasma.components 3.0 as PlasmaComponents3
 import org.kde.plasma.extras 2.0 as PlasmaExtras
 
 import org.kde.kquickcontrolsaddons 2.0 as KQCAddons
@@ -40,6 +40,7 @@ ColumnLayout {
     property int notificationType
 
     property bool inGroup: false
+    property bool inHistory: false
 
     property alias applicationIconSource: notificationHeading.applicationIconSource
     property alias applicationName: notificationHeading.applicationName
@@ -109,18 +110,33 @@ ColumnLayout {
     signal resumeJobClicked
     signal killJobClicked
 
-    spacing: 0
+    spacing: units.smallSpacing
 
-    PlasmaExtras.PlasmoidHeading {
-        bottomInset: 0
-        bottomPadding: 0
-        Layout.leftMargin: notificationItem.headingLeftPadding
-        Layout.rightMargin: notificationItem.headingRightPadding
-        background.visible: !notificationItem.inGroup
+    Item {
+        id: headingElement
+        Layout.fillWidth: true
+        Layout.preferredHeight: notificationHeading.implicitHeight
+        Layout.preferredWidth: notificationHeading.implicitWidth
+        Layout.bottomMargin: -parent.spacing
+
+        PlasmaCore.FrameSvgItem {
+            imagePath: "widgets/plasmoidheading"
+            prefix: "header"
+            anchors {
+                fill: parent
+                leftMargin: -margins.left
+                rightMargin: -margins.right
+            }
+            visible: !notificationItem.inHistory && fromCurrentTheme
+        }
 
         NotificationHeader {
             id: notificationHeading
-            anchors.fill: parent
+            anchors {
+                fill: parent
+                leftMargin: notificationItem.headingLeftPadding
+                rightMargin: notificationItem.headingRightPadding
+            }
 
             inGroup: notificationItem.inGroup
 
@@ -325,10 +341,10 @@ ColumnLayout {
 
                 model: {
                     var buttons = [];
+                    var actionNames = (notificationItem.actionNames || []);
+                    var actionLabels = (notificationItem.actionLabels || []);
                     // HACK We want the actions to be right-aligned but Flow also reverses
-                    var actionNames = (notificationItem.actionNames || []).reverse();
-                    var actionLabels = (notificationItem.actionLabels || []).reverse();
-                    for (var i = 0; i < actionNames.length; ++i) {
+                    for (var i = actionNames.length - 1; i >= 0; --i) {
                         buttons.push({
                             actionName: actionNames[i],
                             label: actionLabels[i]
@@ -345,11 +361,10 @@ ColumnLayout {
                     return buttons;
                 }
 
-                PlasmaComponents.ToolButton {
+                PlasmaComponents3.ToolButton {
                     flat: false
                     // why does it spit "cannot assign undefined to string" when a notification becomes expired?
                     text: modelData.label || ""
-                    width: minimumWidth
 
                     onClicked: {
                         if (modelData.actionName === "inline-reply") {
@@ -431,7 +446,7 @@ ColumnLayout {
          State {
             when: notificationItem.inGroup
             PropertyChanges {
-                target: notificationHeading
+                target: headingElement
                 parent: summaryRow
             }
 

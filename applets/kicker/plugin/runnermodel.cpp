@@ -167,7 +167,7 @@ QStringList RunnerModel::runners() const
 
 void RunnerModel::setRunners(const QStringList &runners)
 {
-    if (m_runners.toSet() != runners.toSet()) {
+    if (std::is_permutation(runners.cbegin(), runners.cend(), m_runners.cbegin(), m_runners.cend())) {
         m_runners = runners;
 
         if (m_runnerManager) {
@@ -225,10 +225,10 @@ void RunnerModel::matchesChanged(const QList<Plasma::QueryMatch> &matches)
         it.value().append(match);
     }
 
-    // Sort matches for all runners in descending order. This allows the best
+    // Sort matches for all runners in descending order, note the reverse iterators. This allows the best
     // match to win whilest preserving order between runners.
     for (auto &list : matchesForRunner) {
-        std::sort(list.begin(), list.end(), qGreater<Plasma::QueryMatch>());
+        std::sort(list.rbegin(), list.rend());
     }
 
     if (m_mergeResults) {
@@ -320,6 +320,7 @@ void RunnerModel::clear()
 {
     if (m_runnerManager) {
         m_runnerManager->reset();
+        m_runnerManager->matchSessionComplete();
     }
 
     if (m_models.isEmpty()) {

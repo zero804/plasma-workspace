@@ -32,13 +32,12 @@
 
 #include <kservicetypetrader.h>
 
-K_EXPORT_PLASMA_RUNNER(locations, LocationsRunner)
+K_EXPORT_PLASMA_RUNNER_WITH_JSON(LocationsRunner, "plasma-runner-locations.json")
 
 
 LocationsRunner::LocationsRunner(QObject *parent, const QVariantList& args)
     : Plasma::AbstractRunner(parent, args)
 {
-    Q_UNUSED(args);
     // set the name shown after the result in krunner window
     setObjectName(QStringLiteral("Locations"));
     setIgnoredTypes(Plasma::RunnerContext::Executable | Plasma::RunnerContext::ShellCommand);
@@ -100,7 +99,6 @@ void LocationsRunner::match(Plasma::RunnerContext &context)
         }
 
         Plasma::QueryMatch match(this);
-        match.setText(i18n("Go to %1", url.toDisplayString()));
         match.setIconName(KProtocolInfo::icon(url.scheme()));
         match.setData(url.url());
 
@@ -183,9 +181,6 @@ void LocationsRunner::run(const Plasma::RunnerContext &context, const Plasma::Qu
     }
 
     location = convertCaseInsensitivePath(location);
-
-    //qDebug() << "command: " << context.query();
-    //qDebug() << "url: " << location << data;
 
     QUrl urlToRun(KUriFilter::self()->filteredUri(location, {QStringLiteral("kshorturifilter")}));
 

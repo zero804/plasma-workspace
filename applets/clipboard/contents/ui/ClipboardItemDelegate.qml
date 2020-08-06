@@ -21,7 +21,7 @@ import QtQuick 2.0
 import QtQuick.Layouts 1.1
 import QtGraphicalEffects 1.0
 
-import org.kde.plasma.components 2.0 as PlasmaComponents
+import org.kde.plasma.components 2.0 as PlasmaComponents // For ListItem
 import org.kde.kquickcontrolsaddons 2.0 as KQuickControlsAddons
 
 PlasmaComponents.ListItem {
@@ -34,7 +34,7 @@ PlasmaComponents.ListItem {
     signal itemSelected(string uuid)
     signal remove(string uuid)
     signal edit(string uuid)
-    signal barcode(string uuid)
+    signal barcode(string text)
     signal action(string uuid)
 
     // the 1.6 comes from ToolButton's default height

@@ -21,22 +21,37 @@ import QtQuick 2.0
 import QtQuick.Layouts 1.1
 import org.kde.plasma.plasmoid 2.0
 import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.components 2.0 as PlasmaComponents
+import org.kde.plasma.components 2.0 as PlasmaComponents // For PageStack
+import org.kde.plasma.components 3.0 as PlasmaComponents3
 import org.kde.plasma.extras 2.0 as PlasmaExtras
 
 Item {
     id: main
 
+    property bool isClipboardEmpty: clipboardSource.data["clipboard"]["empty"]
+
     Plasmoid.switchWidth: units.gridUnit * 5
     Plasmoid.switchHeight: units.gridUnit * 5
-    Plasmoid.status: clipboardSource.data["clipboard"]["empty"] ? PlasmaCore.Types.PassiveStatus : PlasmaCore.Types.ActiveStatus
+    Plasmoid.status: isClipboardEmpty ? PlasmaCore.Types.PassiveStatus : PlasmaCore.Types.ActiveStatus
     Plasmoid.toolTipMainText: i18n("Clipboard Contents")
-    Plasmoid.toolTipSubText: clipboardSource.data["clipboard"]["empty"] ? i18n("Clipboard is empty") : clipboardSource.data["clipboard"]["current"]
+    Plasmoid.toolTipSubText: isClipboardEmpty ? i18n("Clipboard is empty") : clipboardSource.data["clipboard"]["current"]
     Plasmoid.toolTipTextFormat: Text.PlainText
     Plasmoid.icon: "klipper"
 
     function action_configure() {
         clipboardSource.service("", "configureKlipper");
+    }
+
+    onIsClipboardEmptyChanged: {
+        if (isClipboardEmpty) {
+            // We need to hide the applet before changing its status to passive
+            // because only the active applet can hide itself
+            if (plasmoid.hideOnWindowDeactivate)
+                plasmoid.expanded = false;
+            Plasmoid.status = PlasmaCore.Types.PassiveStatus;
+        } else {
+            Plasmoid.status = PlasmaCore.Types.ActiveStatus
+        }
     }
 
     Component.onCompleted: {
@@ -63,12 +78,14 @@ Item {
         }
     }
 
-    Plasmoid.fullRepresentation: Item {
+    Plasmoid.fullRepresentation: PlasmaComponents3.Page {
         id: dialogItem
         Layout.minimumWidth: units.gridUnit * 5
         Layout.minimumHeight: units.gridUnit * 5
 
         focus: true
+
+        header: stack.currentPage.header
 
         property alias listMargins: listItemSvg.margins
 

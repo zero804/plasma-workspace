@@ -23,7 +23,6 @@ import QtQuick 2.0
 import QtQuick.Layouts 1.1
 import org.kde.plasma.plasmoid 2.0
 import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.components 2.0 as PlasmaComponents
 import org.kde.plasma.extras 2.0 as PlasmaExtras
 
 Item {
@@ -81,7 +80,7 @@ Item {
 
     Plasmoid.switchWidth: units.gridUnit * 14
     Plasmoid.switchHeight: units.gridUnit * 10
-    Plasmoid.icon: albumArt ? albumArt : "media-playback-playing"
+    Plasmoid.icon: "media-playback-playing"
     Plasmoid.toolTipMainText: i18n("No media playing")
     Plasmoid.toolTipSubText: identity
     Plasmoid.toolTipTextFormat: Text.PlainText
@@ -309,7 +308,7 @@ Item {
 
             PropertyChanges {
                 target: plasmoid
-                icon: albumArt ? albumArt : "media-playback-playing"
+                icon: "media-playback-playing"
                 toolTipMainText: track
                 toolTipSubText: artist ? i18nc("by Artist (player name)", "by %1 (%2)", artist, identity) : identity
             }
@@ -320,7 +319,7 @@ Item {
 
             PropertyChanges {
                 target: plasmoid
-                icon: albumArt ? albumArt : "media-playback-paused"
+                icon: "media-playback-paused"
                 toolTipMainText: track
                 toolTipSubText: artist ? i18nc("by Artist (paused, player name)", "by %1 (paused, %2)", artist, identity) : i18nc("Paused (player name)", "Paused (%1)", identity)
             }
