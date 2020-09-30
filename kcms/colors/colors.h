@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include <QColor>
 #include <QScopedPointer>
 #include <QPointer>
 #include <QQmlListReference>
@@ -52,6 +53,12 @@ class KCMColors : public KQuickAddons::ManagedConfigModule
     Q_PROPERTY(ColorsSettings *colorsSettings READ colorsSettings CONSTANT)
     Q_PROPERTY(bool downloadingFile READ downloadingFile NOTIFY downloadingFileChanged)
 
+    Q_PROPERTY(bool hasAccent READ hasAccent CONSTANT)
+    Q_PROPERTY(QColor accentForeground READ accentForeground CONSTANT)
+
+    Q_PROPERTY(bool pendingHasAccent MEMBER m_pendingHasAccent NOTIFY pendingHasAccentChanged)
+    Q_PROPERTY(QColor pendingAccent MEMBER m_pendingAccent NOTIFY pendingAccentChanged)
+
 public:
     KCMColors(QObject *parent, const QVariantList &args);
     ~KCMColors() override;
@@ -67,6 +74,8 @@ public:
     FilterProxyModel *filteredModel() const;
     ColorsSettings *colorsSettings() const;
     bool downloadingFile() const;
+    bool hasAccent() const;
+    QColor accentForeground() const;
 
     Q_INVOKABLE void reloadModel(const QQmlListReference &changedEntries);
     Q_INVOKABLE void installSchemeFromFile(const QUrl &url);
@@ -85,6 +94,9 @@ Q_SIGNALS:
 
     void showSchemeNotInstalledWarning(const QString &schemeName);
 
+    void pendingHasAccentChanged(bool hasAccent);
+    void pendingAccentChanged(QColor accent);
+
 private:
     bool isSaveNeeded() const override;
 
@@ -99,6 +111,9 @@ private:
 
     bool m_selectedSchemeDirty = false;
     bool m_activeSchemeEdited = false;
+
+    bool m_pendingHasAccent;
+    QColor m_pendingAccent;
 
     bool m_applyToAlien = true;
 

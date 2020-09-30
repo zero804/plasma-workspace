@@ -25,7 +25,8 @@ import QtQuick.Dialogs 1.0 as QtDialogs
 import QtQuick.Controls 2.3 as QtControls
 import org.kde.kirigami 2.8 as Kirigami
 import org.kde.newstuff 1.62 as NewStuff
-import org.kde.kcm 1.3 as KCM
+import org.kde.kcm 1.5 as KCM
+import org.kde.kquickcontrols 2.0 as KQuickControls
 import org.kde.private.kcms.colors 1.0 as Private
 
 KCM.GridViewKCM {
@@ -51,6 +52,11 @@ KCM.GridViewKCM {
         configObject: kcm.colorsSettings
         settingName: "colorScheme"
         extraEnabledConditions: !kcm.downloadingFile
+    }
+
+    KCM.SettingHighlighter {
+    	target: accentBox
+    	highlight: kcm.hasAccent || kcm.pendingHasAccent
     }
 
     Component.onCompleted: {
@@ -124,6 +130,27 @@ KCM.GridViewKCM {
                         newProps.iconColor = Kirigami.Theme.textColor;
                         return newProps;
                     });
+                }
+            }
+        }
+
+        RowLayout {
+            QtControls.CheckBox {
+                id: accentBox
+                checked: kcm.hasAccent
+                text: i18n("Override theme accent color:")
+                onToggled: {
+                    kcm.pendingHasAccent = checked
+                    kcm.settingsChanged()
+                }
+            }
+            KQuickControls.ColorButton {
+                Layout.preferredWidth: implicitHeight
+                color: kcm.accentForeground
+                enabled: accentBox.checked
+                onAccepted: (color) => {
+                    kcm.pendingAccent = color
+                    kcm.settingsChanged()
                 }
             }
         }

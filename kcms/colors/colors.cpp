@@ -24,6 +24,7 @@
 
 #include "colors.h"
 
+#include <QColor>
 #include <QDBusConnection>
 #include <QDBusMessage>
 #include <QFileInfo>
@@ -75,6 +76,9 @@ KCMColors::KCMColors(QObject *parent, const QVariantList &args)
     qmlRegisterType<FilterProxyModel>();
     qmlRegisterType<ColorsSettings>();
 
+    m_pendingHasAccent = hasAccent();
+    m_pendingAccent = accentForeground();
+
     KAboutData *about = new KAboutData(QStringLiteral("kcm_colors"), i18n("Colors"),
                                        QStringLiteral("2.0"), QString(), KAboutLicense::GPL);
     about->addAuthor(i18n("Kai Uwe Broulik"), QString(), QStringLiteral("kde@privat.broulik.de"));
@@ -113,6 +117,28 @@ FilterProxyModel *KCMColors::filteredModel() const
 ColorsSettings *KCMColors::colorsSettings() const
 {
     return m_data->settings();
+}
+
+bool KCMColors::hasAccent() const
+{
+    KConfigGroup accent(m_config, "Accent");
+    return accent.hasKey("Foreground") || accent.hasKey("Background");
+}
+
+QColor KCMColors::accentForeground() const
+{
+    KConfigGroup accent(m_config, "Accent");
+
+    return accent.readEntry("Foreground",
+        KSharedConfig::openConfig(
+            QStandardPaths::locate(
+                QStandardPaths::GenericDataLocation,
+                QStringLiteral("color-schemes/%1.colors")
+                    .arg(m_model->selectedScheme())
+            ),
+            KConfig::SimpleConfig
+        )->group("Colors:View").readEntry("ForegroundActive", QColor(61, 174, 233))
+    );
 }
 
 bool KCMColors::downloadingFile() const
@@ -308,7 +334,10 @@ void KCMColors::editScheme(const QString &schemeName, QQuickItem *ctx)
 
 bool KCMColors::isSaveNeeded() const
 {
-    return m_activeSchemeEdited || !m_model->match(m_model->index(0, 0), ColorsModel::PendingDeletionRole, true).isEmpty();
+    return m_activeSchemeEdited || 
+           !m_model->match(m_model->index(0, 0), ColorsModel::PendingDeletionRole, true).isEmpty() ||
+           accentForeground() != m_pendingAccent ||
+           hasAccent() != m_pendingHasAccent;
 }
 
 
@@ -352,11 +381,27 @@ void KCMColors::save()
     // We need to save the colors change first, to avoid a situation,
     // when we announced that the color scheme has changed, but
     // the colors themselves in the color scheme have not yet
-    if (m_selectedSchemeDirty || m_activeSchemeEdited) {
+    if (m_selectedSchemeDirty || m_activeSchemeEdited || m_pendingAccent != hasAccent()) {
         saveColors();
     }
     ManagedConfigModule::save();
     m_activeSchemeEdited = false;
+
+    if (m_pendingAccent != accentForeground()) {
+        KSharedConfigPtr config = KSharedConfig::openConfig("kdeglobals");
+        KConfigGroup accent(config, "Accent");
+        accent.writeEntry("Foreground", m_pendingAccent);
+        accent.writeEntry("Background", KColorUtils::darken(m_pendingAccent));
+        accent.sync();
+    }
+
+    if (m_pendingHasAccent != hasAccent()) {
+        if (m_pendingHasAccent == false) {
+            KSharedConfigPtr config = KSharedConfig::openConfig("kdeglobals");
+            config.data()->deleteGroup("Accent");
+            config.data()->sync();
+        }
+    }
 
     processPendingDeletions();
 }
@@ -402,6 +447,13 @@ void KCMColors::saveColors()
         QStringLiteral("DecorationHover")
     };
 
+    const QStringList accentList{
+        QStringLiteral("ForegroundActive"),
+        QStringLiteral("ForegroundLink"),
+        QStringLiteral("DecorationFocus"),
+        QStringLiteral("DecorationHover")
+    };
+
     for (auto item : colorSetGroupList) {
         m_config->deleteGroup(item);
 
@@ -409,7 +461,17 @@ void KCMColors::saveColors()
         KConfigGroup targetGroup(m_config, item);
 
         for (auto entry : colorSetKeyList) {
-            copyEntry(sourceGroup, targetGroup, entry);
+            if (m_pendingHasAccent && accentList.contains(entry)) {
+                targetGroup.writeEntry(entry, m_pendingAccent);
+            } else {
+                copyEntry(sourceGroup, targetGroup, entry);
+            }
+        }
+
+        if (item == QStringLiteral("Colors:Selection") && m_pendingHasAccent) {
+            for (auto entry : { QStringLiteral("BackgroundNormal"), QStringLiteral("BackgroundAlternate") }) {
+                targetGroup.writeEntry(entry, KColorUtils::darken(m_pendingAccent));
+            }
         }
 
         if (sourceGroup.hasGroup("Inactive")) {
