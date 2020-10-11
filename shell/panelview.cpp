@@ -80,6 +80,7 @@ PanelView::PanelView(ShellCorona *corona, QScreen *targetScreen, QWindow *parent
     setColor(QColor(Qt::transparent));
     setFlags(Qt::FramelessWindowHint|Qt::WindowDoesNotAcceptFocus);
 
+	connect(&m_theme, &Plasma::Theme::themeChanged, this, &PanelView::updateMask);
     connect(&m_theme, &Plasma::Theme::themeChanged, this, &PanelView::adaptiveTransparencyEnabledChanged);
     connect(this, &PanelView::backgroundHintsChanged, this, &PanelView::updateMask);
     connect(this, &PanelView::backgroundHintsChanged, this, &PanelView::updateEnabledBorders);
