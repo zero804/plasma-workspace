@@ -102,10 +102,15 @@ class PanelView : public PlasmaQuick::ContainmentView
 
     /**
      *  Property that determines how a panel's opacity behaves.
-     * 
+     *
      * @see OpacityMode
      */
     Q_PROPERTY(OpacityMode opacityMode READ opacityMode WRITE setOpacityMode NOTIFY opacityModeChanged)
+
+    /**
+    /*  Property that determines whether adaptive opacity is used.
+     */
+    Q_PROPERTY(AdaptiveOpacityEnabled adaptiveOpacityEnabled READ adaptiveOpacityEnabled NOTIFY adaptiveOpacityEnabledChanged)
 
 public:
 
@@ -205,6 +210,7 @@ Q_SIGNALS:
     void screenToFollowChanged(QScreen *screen);
     void visibilityModeChanged();
     void opacityModeChanged();
+    void adaptiveOpacityEnabledChanged();
 
 protected Q_SLOTS:
     /**
@@ -224,7 +230,7 @@ private Q_SLOTS:
     void adaptToScreen();
     void handleQmlStatusChange(QQmlComponent::Status status);
     void updateMask();
-    void updateEnabledBorders();    
+    void updateEnabledBorders();
 
 private:
     int readConfigValueWithFallBack(const QString &key, int defaultValue);
