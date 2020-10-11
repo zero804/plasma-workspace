@@ -170,6 +170,7 @@ public:
 
     PanelView::OpacityMode opacityMode() const;
     void setOpacityMode(PanelView::OpacityMode mode);
+    void updateAdaptiveOpacityEnabled();
 
     /**
      * @returns the geometry of the panel given a distance
