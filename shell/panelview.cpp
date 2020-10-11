@@ -77,9 +77,10 @@ PanelView::PanelView(ShellCorona *corona, QScreen *targetScreen, QWindow *parent
     setClearBeforeRendering(true);
     setColor(QColor(Qt::transparent));
     setFlags(Qt::FramelessWindowHint|Qt::WindowDoesNotAcceptFocus);
+    updateAdaptiveOpacityEnabled();
 
     connect(&m_theme, &Plasma::Theme::themeChanged, this, &PanelView::updateMask);
-    connect(&m_theme, &Plasma::Theme::themeChanged, this, &PanelView::adaptiveTransparencyEnabledChanged);
+    connect(&m_theme, &Plasma::Theme::themeChanged, this, &PanelView::updateAdaptiveOpacityEnabled);
     connect(this, &PanelView::backgroundHintsChanged, this, &PanelView::updateMask);
     connect(this, &PanelView::backgroundHintsChanged, this, &PanelView::updateEnabledBorders);
     // TODO: add finished/componentComplete signal to QuickViewSharedEngine,
@@ -432,6 +433,15 @@ void PanelView::setOpacityMode(PanelView::OpacityMode mode)
         }
         emit opacityModeChanged();
     }
+}
+
+void PanelView::updateAdaptiveOpacityEnabled()
+{
+    if (!m_theme) return;
+    if (!m_theme.adaptiveTransparencyEnabled) {
+        setOpacityMode(PanelView::Translucent);
+    }
+    emit AdaptiveTransparencyEnabledChanged;
 }
 
 void PanelView::positionPanel()
