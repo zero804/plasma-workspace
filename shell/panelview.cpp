@@ -419,7 +419,7 @@ PanelView::OpacityMode PanelView::opacityMode() const
 
 PanelView::AdaptiveTransparencyEnabled PanelView::adaptiveTransparency const
 {
-	return m_theme.adaptiveTransparencyEnabled()
+    return m_theme.adaptiveTransparencyEnabled()
 }
 
 void PanelView::setOpacityMode(PanelView::OpacityMode mode)
