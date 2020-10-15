@@ -415,12 +415,15 @@ PanelView::VisibilityMode PanelView::visibilityMode() const
 
 PanelView::OpacityMode PanelView::opacityMode() const
 {
+    if (!m_theme.adaptiveTransparencyEnabled()) {
+        return PanelView::Translucent;
+    }
     return m_opacityMode;
 }
 
-PanelView::AdaptiveTransparencyEnabled PanelView::adaptiveTransparency const
+bool PanelView::adaptiveOpacityEnabled()
 {
-    return m_theme.adaptiveTransparencyEnabled()
+    return m_theme.adaptiveTransparencyEnabled();
 }
 
 void PanelView::setOpacityMode(PanelView::OpacityMode mode)
@@ -437,11 +440,8 @@ void PanelView::setOpacityMode(PanelView::OpacityMode mode)
 
 void PanelView::updateAdaptiveOpacityEnabled()
 {
-    if (!m_theme) return;
-    if (!m_theme.adaptiveTransparencyEnabled) {
-        setOpacityMode(PanelView::Translucent);
-    }
-    emit AdaptiveTransparencyEnabledChanged;
+    emit opacityModeChanged();
+    emit adaptiveOpacityEnabledChanged();
 }
 
 void PanelView::positionPanel()
