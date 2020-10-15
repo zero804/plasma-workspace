@@ -634,7 +634,7 @@ void PanelView::restore()
     //the place for this config key is changed in Plasma 5.9
     //Do NOT use readConfigValueWithFallBack
     setVisibilityMode((VisibilityMode)config().parent().readEntry<int>("panelVisibility", config().readEntry<int>("panelVisibility", (int)NormalPanel)));
-    setOpacityMode((OpacityMode)config().parent().readEntry<int>("panelOpacity", config().readEntry<int>("panelOpacity", (int)Adaptive)));
+    setOpacityMode((OpacityMode)readConfigValueWithFallBack("panelOpacity", PanelView::OpacityMode::Adaptive));
     m_initCompleted = true;
     resizePanel();
     positionPanel();
