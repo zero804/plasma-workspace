@@ -233,6 +233,7 @@ private Q_SLOTS:
     void handleQmlStatusChange(QQmlComponent::Status status);
     void updateMask();
     void updateEnabledBorders();
+    void updatePadding();
 
 private:
     int readConfigValueWithFallBack(const QString &key, int defaultValue);
@@ -251,6 +252,10 @@ private:
     int m_contentLength;
     int m_distance;
     int m_thickness;
+    int m_bottomPadding;
+    int m_topPadding;
+    int m_leftPadding;
+    int m_rightPadding;
     bool m_initCompleted;
     bool m_containsMouse = false;
     Qt::Alignment m_alignment;

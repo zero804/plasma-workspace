@@ -28,9 +28,10 @@ public:
     explicit Private(UpdateLaunchEnvJob *q);
     void monitorReply(const QDBusPendingReply<> &reply);
 
+    static bool isSystemdApprovedValue(const QString &value);
+
     UpdateLaunchEnvJob *q;
-    QString varName;
-    QString value;
+    QProcessEnvironment environment;
     int pendingReplies = 0;
 };
 
@@ -58,8 +59,14 @@ void UpdateLaunchEnvJob::Private::monitorReply(const QDBusPendingReply<> &reply)
 UpdateLaunchEnvJob::UpdateLaunchEnvJob(const QString &varName, const QString &value)
     : d(new Private(this))
 {
-    d->varName = varName;
-    d->value = value;
+    d->environment.insert(varName, value);
+    start();
+}
+
+UpdateLaunchEnvJob::UpdateLaunchEnvJob(const QProcessEnvironment &environment)
+    : d(new Private(this))
+{
+    d->environment = environment;
     start();
 }
 
@@ -70,26 +77,44 @@ UpdateLaunchEnvJob::~UpdateLaunchEnvJob()
 
 void UpdateLaunchEnvJob::start()
 {
-    // KLauncher
-    org::kde::KLauncher klauncher(QStringLiteral("org.kde.klauncher5"),
-                                  QStringLiteral("/KLauncher"),
-                                  QDBusConnection::sessionBus());
-    auto klauncherReply = klauncher.setLaunchEnv(d->varName, d->value);
-    d->monitorReply(klauncherReply);
+    qDBusRegisterMetaType<QMap<QString, QString>>();
+    QMap<QString, QString> dbusActivationEnv;
+    QStringList systemdUpdates;
 
-    // plasma-session
-    org::kde::Startup startup(QStringLiteral("org.kde.Startup"),
-                              QStringLiteral("/Startup"),
-                              QDBusConnection::sessionBus());
-    auto startupReply = startup.updateLaunchEnv(d->varName, d->value);
-    d->monitorReply(startupReply);
+    for (const auto &varName : d->environment.keys()) {
+        const QString value = d->environment.value(varName);
+
+        // KLauncher
+        org::kde::KLauncher klauncher(QStringLiteral("org.kde.klauncher5"),
+                                    QStringLiteral("/KLauncher"),
+                                    QDBusConnection::sessionBus());
+        auto klauncherReply = klauncher.setLaunchEnv(varName, value);
+        d->monitorReply(klauncherReply);
+
+        // plasma-session
+        org::kde::Startup startup(QStringLiteral("org.kde.Startup"),
+                                QStringLiteral("/Startup"),
+                                QDBusConnection::sessionBus());
+        auto startupReply = startup.updateLaunchEnv(varName, value);
+        d->monitorReply(startupReply);
+
+
+        // DBus-activation environment
+        dbusActivationEnv.insert(varName, value);
+
+        // _user_ systemd env
+        // Systemd has stricter parsing of valid environment variables
+        // https://github.com/systemd/systemd/issues/16704
+        // validate here
+        if (!Private::isSystemdApprovedValue(value)) {
+            qWarning() << "Skipping syncing of environment variable " << varName << "as value contains unsupported characters";
+            continue;
+        }
+        const QString updateString = varName + QStringLiteral("=") + value;
+        systemdUpdates.append(updateString);
+    }
 
     // DBus-activation environment
-    qDBusRegisterMetaType<QMap<QString, QString>>();
-    const QMap<QString, QString> dbusActivationEnv{
-        {d->varName, d->value}
-    };
-
     QDBusMessage dbusActivationMsg = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.DBus"),
                                                                     QStringLiteral("/org/freedesktop/DBus"),
                                                                     QStringLiteral("org.freedesktop.DBus"),
@@ -101,13 +126,30 @@ void UpdateLaunchEnvJob::start()
 
     // _user_ systemd env
     QDBusMessage systemdActivationMsg = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.systemd1"),
-                                                                       QStringLiteral("/org/freedesktop/systemd1"),
-                                                                       QStringLiteral("org.freedesktop.systemd1.Manager"),
-                                                                       QStringLiteral("SetEnvironment"));
-    const QString updateString = d->varName + QStringLiteral("=") + d->value;
-    systemdActivationMsg.setArguments({QVariant(QStringList{updateString})});
+                                                                    QStringLiteral("/org/freedesktop/systemd1"),
+                                                                    QStringLiteral("org.freedesktop.systemd1.Manager"),
+                                                                    QStringLiteral("SetEnvironment"));
+    systemdActivationMsg.setArguments({systemdUpdates});
+
 
     auto systemdActivationReply = QDBusConnection::sessionBus().asyncCall(systemdActivationMsg);
     d->monitorReply(systemdActivationReply);
 }
 
+bool UpdateLaunchEnvJob::Private::isSystemdApprovedValue(const QString &value)
+{
+    // systemd code checks that a value contains no control characters except \n \t
+    // effectively copied from systemd's string_has_cc
+    for (const char &it : value.toLatin1()) {
+        if (it == QLatin1Char('\n') || it == QLatin1Char('\t')) {
+            continue;
+        }
+        if (it > 0 && it < ' ') {
+            return false;
+        }
+        if (it == 127) {
+            return false;
+        }
+    }
+    return true;
+}

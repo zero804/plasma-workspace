@@ -19,7 +19,6 @@ import QtQuick 2.4
 import QtQuick.Layouts 1.1
 import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.calendar 2.0 as PlasmaCalendar
-import org.kde.plasma.components 2.0 as PlasmaComponents // For ListItem
 import org.kde.plasma.components 3.0 as PlasmaComponents3
 import org.kde.plasma.extras 2.0 as PlasmaExtras
 
@@ -68,6 +67,16 @@ PlasmaComponents3.Page {
 
                 text: monthView.currentDate.toLocaleDateString(Qt.locale(), Locale.LongFormat)
             }
+
+            PlasmaComponents3.ToolButton {
+                visible: plasmoid.action("configure").enabled
+                icon.name: "configure"
+                onClicked: plasmoid.action("configure").trigger()
+                PlasmaComponents3.ToolTip {
+                    text: plasmoid.action("configure").text
+                }
+            }
+
             // Allows the user to keep the calendar open for reference
             PlasmaComponents3.ToolButton {
                 checkable: true
@@ -252,8 +261,9 @@ PlasmaComponents3.Page {
                     ListView {
                         id: holidaysList
 
-                        delegate: PlasmaComponents.ListItem {
+                        delegate: PlasmaExtras.ListItem {
                             id: eventItem
+                            implicitHeight: eventGrid.height + PlasmaCore.Units.smallSpacing * 2
                             property bool hasTime: {
                                 // Explicitly all-day event
                                 if (modelData.isAllDay) {
@@ -452,7 +462,7 @@ PlasmaComponents3.Page {
                         return timezones;
                     }
 
-                    delegate: PlasmaComponents.ListItem {
+                    delegate: PlasmaExtras.ListItem {
                         id: listItem
                         readonly property bool isCurrentTimeZone: modelData === plasmoid.configuration.lastSelectedTimezone
                         separatorVisible: false

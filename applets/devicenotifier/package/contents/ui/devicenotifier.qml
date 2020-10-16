@@ -24,7 +24,6 @@ import QtQuick 2.0
 import QtQuick.Layouts 1.1
 import org.kde.plasma.plasmoid 2.0
 import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.components 2.0 as PlasmaComponents
 import org.kde.plasma.extras 2.0 as PlasmaExtras
 
 import org.kde.kquickcontrolsaddons 2.0
@@ -32,7 +31,7 @@ import org.kde.kquickcontrolsaddons 2.0
 Item {
     id: devicenotifier
 
-    readonly property string automounterKcmName: "device_automounter_kcm"
+    readonly property bool openAutomounterKcmAuthorized: KCMShell.authorize("device_automounter_kcm.desktop").length > 0
 
     property string devicesType: {
         if (plasmoid.configuration.allDevices) {
@@ -123,9 +122,6 @@ Item {
             if (data[source].Removable) {
                 devicenotifier.connectedRemovables.push(source);
                 devicenotifier.connectedRemovables = devicenotifier.connectedRemovables;
-                devicenotifier.popupIcon = "preferences-desktop-notification";
-                expandTimer.restart();
-                popupIconTimer.restart()
             }
         }
 
@@ -172,7 +168,10 @@ Item {
 
         function processLastDevice(expand) {
             if (last) {
-                if (isViableDevice(last)) {
+                if (isViableDevice(last) && hpSource.data[last].added) {
+                    devicenotifier.popupIcon = "preferences-desktop-notification";
+                    expandTimer.restart();
+                    popupIconTimer.restart()
                     last = "";
                 }
             }
@@ -231,13 +230,13 @@ Item {
             Plasmoid.status = PlasmaCore.Types.PassiveStatus;
         }
 
-        if (KCMShell.authorize(devicenotifier.automounterKcmName + ".desktop").length > 0) {
+        if (devicenotifier.openAutomounterKcmAuthorized) {
             plasmoid.setAction("openAutomounterKcm", i18nc("Open auto mounter kcm", "Configure Removable Devices"), "drive-removable-media")
         }
     }
 
     function action_openAutomounterKcm() {
-        KCMShell.openSystemSettings(devicenotifier.automounterKcmName)
+        KCMShell.openSystemSettings("device_automounter_kcm")
     }
 
     Plasmoid.onExpandedChanged: {
@@ -276,6 +275,10 @@ Item {
         id: expandTimer
         interval: 250
         onTriggered: {
+            // We don't show a UI for it, but there is a hidden option to not
+            // show the popup on new device attachment if the user has added
+            // the text "popupOnNewDevice=false" to their
+            // plasma-org.kde.plasma.desktop-appletsrc file.
             if (plasmoid.configuration.popupOnNewDevice) { // Bug 351592
                 plasmoid.expanded = true;
                 plasmoid.fullRepresentationItem.spontaneousOpen = true;

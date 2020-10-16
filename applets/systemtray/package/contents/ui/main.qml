@@ -30,36 +30,26 @@ import "items"
 MouseArea {
     id: root
 
-    Layout.minimumWidth: vertical ? units.iconSizes.small : tasksGrid.implicitWidth + (expander.visible ? expander.implicitWidth : 0) + units.smallSpacing
+    Layout.minimumWidth: vertical ? PlasmaCore.Units.iconSizes.small : tasksGrid.implicitWidth + (expander.visible ? expander.implicitWidth : 0) + PlasmaCore.Units.smallSpacing
 
-    Layout.minimumHeight: vertical ? tasksGrid.implicitHeight + (expander.visible ? expander.implicitHeight : 0) + units.smallSpacing : units.smallSpacing
+    Layout.minimumHeight: vertical ? tasksGrid.implicitHeight + (expander.visible ? expander.implicitHeight : 0) + PlasmaCore.Units.smallSpacing : PlasmaCore.Units.smallSpacing
 
     Layout.preferredHeight: Layout.minimumHeight
     LayoutMirroring.enabled: !vertical && Qt.application.layoutDirection === Qt.RightToLeft
     LayoutMirroring.childrenInherit: true
 
-    // The icon size to display when not using the default auto-scaling setting
-    readonly property int smallIconSize: units.iconSizes.smallMedium
+    // The icon size to display when not using the auto-scaling setting
+    readonly property int smallIconSize: PlasmaCore.Units.iconSizes.smallMedium
 
     // Used only by AbstractItem, but it's easiest to keep it here since it
     // uses dimensions from this item to calculate the final value
-    readonly property int itemSize: autoSize ? units.roundToIconSize(Math.min(Math.min(width / rowsOrColumns, height / rowsOrColumns), units.iconSizes.enormous)) : smallIconSize
+    readonly property int itemSize: autoSize ? PlasmaCore.Units.roundToIconSize(Math.min(Math.min(width / rowsOrColumns, height / rowsOrColumns), PlasmaCore.Units.iconSizes.enormous)) : smallIconSize
 
     // The rest are derived properties; do not modify
     readonly property bool vertical: plasmoid.formFactor === PlasmaCore.Types.Vertical
-    readonly property bool autoSize: plasmoid.configuration.automaticRowsOrColumns
+    readonly property bool autoSize: plasmoid.configuration.scaleIconsToFit
     readonly property int cellThickness: root.vertical ? root.width : root.height
-    readonly property int rowsOrColumns: {
-        if (autoSize) {
-            if (cellThickness <= smallIconSize * 2) {
-                return 1
-            } else {
-                return 2
-            }
-        } else {
-            return plasmoid.configuration.rowsOrColumns
-        }
-    }
+    readonly property int rowsOrColumns: autoSize ? 1 : Math.max(1, Math.floor(cellThickness / (smallIconSize + PlasmaCore.Units.smallSpacing)))
     property alias expanded: dialog.visible
     property Item activeApplet
     property alias visibleLayout: tasksGrid
@@ -91,17 +81,27 @@ MouseArea {
         }
     }
 
-    Connections {
-        target: plasmoid.configuration
-
-        function onExtraItemsChanged() {
-            plasmoid.nativeInterface.allowedPlasmoids = plasmoid.configuration.extraItems
-        }
-    }
-
     CurrentItemHighLight {
-        readonly property bool visibleAppletActivated: root.activeApplet && root.activeApplet.parent && root.activeApplet.parent.inVisibleLayout
-        parent: visibleAppletActivated ? root.activeApplet.parent : root
+        property alias activeApplet: root.activeApplet
+        property alias dialogVisible: dialog.visible
+
+        // Not only is an applet active, but also it's an applet from the visible part of the tray, not the hidden part.
+        readonly property bool visibleAppletActivated: activeApplet && activeApplet.parent && activeApplet.parent.inVisibleLayout
+
+        onActiveAppletChanged: {
+            if (activeApplet && activeApplet.parent.inVisibleLayout) {
+                changeHighlightedItem(activeApplet.parent);
+            } else if (dialog.visible) {
+                changeHighlightedItem(root);
+            }
+        }
+
+        onDialogVisibleChanged: {
+            if (dialogVisible && !activeApplet) {
+                changeHighlightedItemNoAnimation(root);
+            }
+        }
+
         location: plasmoid.location
     }
 
@@ -157,9 +157,9 @@ MouseArea {
 
         GridView {
             id: tasksGrid
-
+            readonly property int smallSizeCellLength: root.cellThickness > root.smallIconSize ? root.smallIconSize + PlasmaCore.Units.smallSpacing * 2
+                                                                                               : root.smallIconSize
             readonly property int autoSizeCellLength: root.cellThickness / root.rowsOrColumns
-            readonly property int smallSizeCellLength: root.smallIconSize + units.smallSpacing * 2
             readonly property int totalLength: root.vertical ? cellHeight * Math.round(count / root.rowsOrColumns)
                                                              : cellWidth * Math.round(count / root.rowsOrColumns)
 
@@ -192,7 +192,7 @@ MouseArea {
                     from: 0
                     to: 1
                     easing.type: Easing.InOutQuad
-                    duration: units.longDuration
+                    duration: PlasmaCore.Units.longDuration
                 }
             }
 
@@ -203,7 +203,7 @@ MouseArea {
                     property: "scale"
                     to: 1
                     easing.type: Easing.InOutQuad
-                    duration: units.longDuration
+                    duration: PlasmaCore.Units.longDuration
                 }
             }
 
@@ -211,7 +211,7 @@ MouseArea {
                 NumberAnimation {
                     properties: "x,y"
                     easing.type: Easing.InOutQuad
-                    duration: units.longDuration
+                    duration: PlasmaCore.Units.longDuration
                 }
             }
         }

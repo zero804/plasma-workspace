@@ -1,15 +1,20 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.6)
 
 project(plasma-workspace)
-set(PROJECT_VERSION "5.19.80")
+set(PROJECT_VERSION "5.20.80")
 set(PROJECT_VERSION_MAJOR 5)
 
-set(QT_MIN_VERSION "5.14.0")
-set(KF5_MIN_VERSION "5.72.0")
+set(QT_MIN_VERSION "5.15.0")
+set(KF5_MIN_VERSION "5.74")
 set(INSTALL_SDDM_THEME TRUE)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 find_package(Qt5 ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS Svg Widgets Quick QuickWidgets Concurrent Test Network)
 find_package(ECM ${KF5_MIN_VERSION} REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -25,8 +30,11 @@ include(FeatureSummary)
 include(ECMOptionalAddSubdirectory)
 include(ECMQtDeclareLoggingCategory)
 include(ECMQueryQmake)
+include(ECMInstallIcons)
 include(KDEPackageAppTemplates)
 include(KDEClangFormat)
+include(ECMConfiguredInstall)
+include(ECMGenerateDBusServiceFile)
 
 find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS
                     Plasma DocTools Runner Notifications NotifyConfig Su NewStuff Wallet
@@ -87,6 +95,14 @@ set_package_properties(ZLIB PROPERTIES DESCRIPTION "Support for gzip compressed 
                        TYPE REQUIRED
                       )
 
+find_package(Fontconfig)
+set_package_properties(Fontconfig PROPERTIES DESCRIPTION "Font access configuration library"
+                       URL "https://www.freedesktop.org/wiki/Software/fontconfig"
+                       TYPE OPTIONAL
+                       PURPOSE "Needed to build font configuration and installation tools"
+                      )
+
+
 find_package(X11)
 set_package_properties(X11 PROPERTIES DESCRIPTION "X11 libraries"
                         URL "https://www.x.org"
@@ -97,12 +113,16 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(PipeWire IMPORTED_TARGET libpipewire-0.3)
 add_feature_info(PipeWire PipeWire_FOUND "Required for Wayland screencasting")
 
+if(PipeWire_FOUND)
+  find_package(Libdrm REQUIRED)
+endif()
+
 find_package(QtWaylandScanner REQUIRED)
 find_package(PlasmaWaylandProtocols REQUIRED)
 find_package(Wayland REQUIRED COMPONENTS Client)
 
 if(X11_FOUND)
-  find_package(XCB MODULE REQUIRED COMPONENTS XCB RANDR)
+  find_package(XCB MODULE REQUIRED COMPONENTS XCB RANDR IMAGE)
   set_package_properties(XCB PROPERTIES TYPE REQUIRED)
   if(NOT X11_SM_FOUND)
     message(FATAL_ERROR "\nThe X11 Session Management (SM) development package could not be found.\nPlease install libSM.\n")
@@ -124,6 +144,15 @@ set_package_properties(AppStreamQt PROPERTIES DESCRIPTION "Access metadata for l
 if(${AppStreamQt_FOUND})
     set(HAVE_APPSTREAMQT true)
 endif()
+
+# Fonts kcm and kfontinst
+find_package(Freetype)
+set_package_properties(Freetype PROPERTIES DESCRIPTION "A font rendering engine"
+                       URL "https://www.freetype.org"
+                       TYPE OPTIONAL
+                       PURPOSE "Needed to build kfontinst, a simple font installer."
+                      )
+
 
 include(ConfigureChecks.cmake)
 
@@ -154,6 +183,8 @@ add_definitions(-DQT_NO_URL_CAST_FROM_STRING)
 
 # locate qdbus in the Qt path because not every distro makes a symlink at /usr/bin/qdbus
 query_qmake(QtBinariesDir QT_INSTALL_BINS)
+
+option(PLASMA_SYSTEMD_BOOT "Use systemd units for startup of plasma (WIP)" FALSE)
 
 add_subdirectory(doc)
 add_subdirectory(libkworkspace)

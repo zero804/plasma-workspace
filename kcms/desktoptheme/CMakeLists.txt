@@ -7,6 +7,14 @@ set(kcm_desktoptheme_SRCS
   filterproxymodel.cpp
 )
 
+kcmutils_generate_module_data(
+    kcm_desktoptheme_SRCS
+    MODULE_DATA_HEADER desktopthemedata.h
+    MODULE_DATA_CLASS_NAME DesktopThemeData
+    SETTINGS_HEADERS desktopthemesettings.h
+    SETTINGS_CLASSES DesktopThemeSettings
+)
+
 kconfig_add_kcfg_files(kcm_desktoptheme_SRCS desktopthemesettings.kcfgc GENERATE_MOC)
 
 add_library(kcm_desktoptheme MODULE ${kcm_desktoptheme_SRCS})

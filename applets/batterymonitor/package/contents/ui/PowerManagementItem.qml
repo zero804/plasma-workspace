@@ -25,7 +25,9 @@ import org.kde.plasma.components 3.0 as PlasmaComponents3
 import org.kde.kquickcontrolsaddons 2.0
 
 ColumnLayout {
+    id: powerManagementHeadingColumn
     property alias enabled: pmCheckBox.checked
+    property bool pluggedIn
 
     spacing: 0
 
@@ -41,12 +43,22 @@ ColumnLayout {
         }
 
         PlasmaComponents3.ToolButton {
+            icon.name: "documentinfo"
+            onClicked: plasmoid.action("energyinformationkcm").trigger()
+            visible: batterymonitor.kcmEnergyInformationAuthorized
+
+            PlasmaComponents3.ToolTip {
+                text: plasmoid.action("energyinformationkcm").text
+            }
+        }
+
+        PlasmaComponents3.ToolButton {
             icon.name: "configure"
-            onClicked: batterymonitor.action_powerdevilkcm()
+            onClicked: plasmoid.action("powerdevilkcm").trigger()
             visible: batterymonitor.kcmsAuthorized
 
             PlasmaComponents3.ToolTip {
-                text: i18n("Configure Power Saving...")
+                text: plasmoid.action("powerdevilkcm").text
             }
         }
     }
@@ -55,6 +67,14 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.leftMargin: units.gridUnit + units.smallSpacing // width of checkbox and spacer
         spacing: units.smallSpacing
+
+        InhibitionHint {
+            Layout.fillWidth: true
+            readonly property var chargeStopThreshold: pmSource.data["Battery"] ? pmSource.data["Battery"]["Charge Stop Threshold"] : undefined
+            visible: powerManagementHeadingColumn.pluggedIn && typeof chargeStopThreshold === "number" && chargeStopThreshold > 0 && chargeStopThreshold < 100
+            iconSource: "kt-speed-limits" // FIXME good icon
+            text: i18n("Your battery is configured to only charge up to %1%.", chargeStopThreshold || 0)
+        }
 
         InhibitionHint {
             Layout.fillWidth: true

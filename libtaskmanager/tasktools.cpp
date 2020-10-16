@@ -26,7 +26,7 @@ License along with this library.  If not, see <http://www.gnu.org/licenses/>.
 #include <KDesktopFile>
 #include <kemailsettings.h>
 #include <KFileItem>
-#include <KMimeTypeTrader>
+#include <KApplicationTrader>
 #include <KNotificationJobUiDelegate>
 #include <KRun>
 #include <KServiceTypeTrader>
@@ -244,7 +244,7 @@ QUrl windowUrlFromMetadata(const QString &appId, quint32 pid,
             return;
         }
 
-        for (const auto service : services) {
+        for (const auto &service : services) {
             if (service->menuId().startsWith(key, Qt::CaseInsensitive)) {
                 services.prepend(service);
                 return;
@@ -648,7 +648,7 @@ QString defaultApplication(const QUrl &url)
         QString browserApp = config.readPathEntry("BrowserApplication", QString());
 
         if (browserApp.isEmpty()) {
-            const KService::Ptr htmlApp = KMimeTypeTrader::self()->preferredService(QStringLiteral("text/html"));
+            const KService::Ptr htmlApp = KApplicationTrader::preferredService(QStringLiteral("text/html"));
 
             if (htmlApp) {
                 browserApp = htmlApp->storageId();
@@ -663,12 +663,12 @@ QString defaultApplication(const QUrl &url)
 
         return confGroup.readPathEntry("TerminalApplication", QStringLiteral("konsole"));
     } else if (application.compare(QLatin1String("filemanager"), Qt::CaseInsensitive) == 0) {
-        KService::Ptr service = KMimeTypeTrader::self()->preferredService(QStringLiteral("inode/directory"));
+        KService::Ptr service = KApplicationTrader::preferredService(QStringLiteral("inode/directory"));
 
         if (service) {
             return service->storageId();
         }
-    } else if (KService::Ptr service = KMimeTypeTrader::self()->preferredService(application)) {
+    } else if (KService::Ptr service = KApplicationTrader::preferredService(application)) {
         return service->storageId();
     } else {
         // Try the files in share/apps/kcm_componentchooser/*.desktop.

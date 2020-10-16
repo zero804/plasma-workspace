@@ -23,7 +23,7 @@
 #include <KLocalizedString>
 #include <KUriFilter>
 #include <KSharedConfig>
-#include <KMimeTypeTrader>
+#include <KApplicationTrader>
 #include <KIO/CommandLauncherJob>
 #include <KSycoca>
 #include <KShell>
@@ -45,6 +45,7 @@ WebshortcutRunner::WebshortcutRunner(QObject *parent, const QVariantList& args)
     loadSyntaxes();
     configurePrivateBrowsingActions();
     connect(KSycoca::self(), QOverload<>::of(&KSycoca::databaseChanged), this, &WebshortcutRunner::configurePrivateBrowsingActions);
+    setMinLetterCount(3);
 }
 
 WebshortcutRunner::~WebshortcutRunner()
@@ -82,7 +83,7 @@ void WebshortcutRunner::configurePrivateBrowsingActions()
         service = KService::serviceByStorageId(browserFile);
     }
     if (!service) {
-        service = KMimeTypeTrader::self()->preferredService(QStringLiteral("text/html"));
+        service = KApplicationTrader::preferredService(QStringLiteral("text/html"));
     }
     if (!service) {
         return;
@@ -95,7 +96,7 @@ void WebshortcutRunner::configurePrivateBrowsingActions()
             m_privateAction = action;
             const QString actionText = containsPrivate ? i18n("Search in private window") : i18n("Search in incognito window");
             const QIcon icon = QIcon::fromTheme(QStringLiteral("view-private"), QIcon::fromTheme(QStringLiteral("view-hidden")));
-            addAction(QStringLiteral("privateSearch"), icon, actionText);
+            m_match.setActions({addAction(QStringLiteral("privateSearch"), icon, actionText)});
             return;
         }
     }
@@ -104,18 +105,23 @@ void WebshortcutRunner::configurePrivateBrowsingActions()
 void WebshortcutRunner::match(Plasma::RunnerContext &context)
 {
     const QString term = context.query();
+    const static QRegularExpression bangRegex(QStringLiteral("!([^ ]+).*"));
+    const static QRegularExpression normalRegex(QStringLiteral("^([^ ]+)%1").arg(QRegularExpression::escape(m_delimiter)));
+    const auto bangMatch = bangRegex.match(term);
+    QString key;
+    QString rawQuery = term;
 
-    if (term.length() < 3 || !context.isValid()){
-        return;
+    if (bangMatch.hasMatch()) {
+        key = bangMatch.captured(1);
+        rawQuery = rawQuery.remove(rawQuery.indexOf(key) - 1, key.size() + 1);
+    } else {
+        const auto normalMatch = normalRegex.match(term);
+        if (normalMatch.hasMatch()) {
+            key = normalMatch.captured(0);
+            rawQuery = rawQuery.mid(key.length());
+        }
     }
-
-    const int delimIndex = term.indexOf(m_delimiter);
-    if (delimIndex == -1 || delimIndex == term.length() - 1) {
-        return;
-    }
-
-    const QString key = term.left(delimIndex);
-    if (key == m_lastFailedKey) {
+    if (key.isEmpty() || key == m_lastFailedKey) {
         return;    // we already know it's going to suck ;)
     }
 
@@ -124,7 +130,7 @@ void WebshortcutRunner::match(Plasma::RunnerContext &context)
     // filtering
     if (m_lastKey == key) {
         m_filterBeforeRun = true;
-        m_match.setText(i18n("Search %1 for %2", m_lastProvider, term.mid(delimIndex + 1)));
+        m_match.setText(i18n("Search %1 for %2", m_lastProvider, rawQuery));
         context.addMatch(m_match);
         return;
     }
@@ -144,12 +150,6 @@ void WebshortcutRunner::match(Plasma::RunnerContext &context)
     m_match.setText(i18n("Search %1 for %2", m_lastProvider, filterData.searchTerm()));
     m_match.setData(filterData.uri());
     context.addMatch(m_match);
-}
-
-QList<QAction *> WebshortcutRunner::actionsForMatch(const Plasma::QueryMatch &match)
-{
-    Q_UNUSED(match)
-    return actions().values();
 }
 
 void WebshortcutRunner::run(const Plasma::RunnerContext &context, const Plasma::QueryMatch &match)

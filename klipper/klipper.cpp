@@ -517,6 +517,8 @@ void Klipper::slotConfigure()
     }
 
     ConfigDialog *dlg = new ConfigDialog( nullptr, KlipperSettings::self(), this, m_collection );
+    QMetaObject::invokeMethod(dlg, "setHelp", Qt::DirectConnection, Q_ARG(QString, QString::fromLatin1("")), Q_ARG(QString, QString::fromLatin1("klipper")));
+
     connect(dlg, &KConfigDialog::settingsChanged, this, &Klipper::loadSettings);
 
     dlg->show();
@@ -737,7 +739,7 @@ void Klipper::checkClipData( bool selectionMode )
         if ( top ) {
             // keep old clipboard after someone set it to null
             qCDebug(KLIPPER_LOG) << "Resetting clipboard (Prevent empty clipboard)";
-            setClipboard( *top, selectionMode ? Selection : Clipboard );
+            setClipboard( *top, selectionMode ? Selection : Clipboard, ClipboardUpdateReason::PreventEmptyClipboard);
         }
         return;
     } else if (clipEmpty) {
@@ -791,7 +793,7 @@ void Klipper::checkClipData( bool selectionMode )
     }
 }
 
-void Klipper::setClipboard( const HistoryItem& item, int mode )
+void Klipper::setClipboard( const HistoryItem& item, int mode , ClipboardUpdateReason updateReason)
 {
     Ignore lock( m_locklevel );
 
@@ -799,11 +801,19 @@ void Klipper::setClipboard( const HistoryItem& item, int mode )
 
     if ( mode & Selection ) {
         qCDebug(KLIPPER_LOG) << "Setting selection to <" << item.text() << ">";
-        m_clip->setMimeData( item.mimeData(), QClipboard::Selection );
+        QMimeData *mimeData = item.mimeData();
+        if (updateReason == ClipboardUpdateReason::PreventEmptyClipboard) {
+            mimeData->setData(QStringLiteral("application/x-kde-onlyReplaceEmpty"), "1");
+        }
+        m_clip->setMimeData( mimeData, QClipboard::Selection );
     }
     if ( mode & Clipboard ) {
         qCDebug(KLIPPER_LOG) << "Setting clipboard to <" << item.text() << ">";
-        m_clip->setMimeData( item.mimeData(), QClipboard::Clipboard );
+        QMimeData *mimeData = item.mimeData();
+        if (updateReason == ClipboardUpdateReason::PreventEmptyClipboard) {
+            mimeData->setData(QStringLiteral("application/x-kde-onlyReplaceEmpty"), "1");
+        }
+        m_clip->setMimeData( mimeData, QClipboard::Clipboard );
     }
 
 }

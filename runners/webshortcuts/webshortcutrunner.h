@@ -30,7 +30,6 @@ class WebshortcutRunner : public Plasma::AbstractRunner
         ~WebshortcutRunner() override;
 
         void match(Plasma::RunnerContext &context) override;
-        QList<QAction *> actionsForMatch(const Plasma::QueryMatch &match) override;
         void run(const Plasma::RunnerContext &context, const Plasma::QueryMatch &match) override;
 
     private Q_SLOTS:
@@ -45,6 +44,7 @@ class WebshortcutRunner : public Plasma::AbstractRunner
         QString m_lastFailedKey;
         QString m_lastKey;
         QString m_lastProvider;
+        QRegularExpression m_regex;
         
         KServiceAction m_privateAction;
 };

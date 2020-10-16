@@ -43,8 +43,16 @@ set (plasma_shell_SRCS
     ${scripting_SRC}
 )
 
+if (TARGET KUserFeedbackCore)
+    set(plasma_shell_SRCS
+        ${plasma_shell_SRCS}
+        userfeedback.cpp
+    )
+endif()
+
 set(krunner_xml ${plasma-workspace_SOURCE_DIR}/krunner/dbus/org.kde.krunner.App.xml)
 qt5_add_dbus_interface(plasma_shell_SRCS ${krunner_xml} krunner_interface)
+
 
 add_executable(plasmashell
     ${plasma_shell_SRCS}
@@ -91,6 +99,8 @@ install(TARGETS plasmashell ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/org.kde.plasmashell.desktop DESTINATION ${KDE_INSTALL_APPDIR})
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/org.kde.plasmashell.desktop DESTINATION ${KDE_INSTALL_AUTOSTARTDIR})
 install( FILES dbus/org.kde.PlasmaShell.xml DESTINATION ${KDE_INSTALL_DBUSINTERFACEDIR} )
+
+ecm_install_configured_files(INPUT plasma-plasmashell.service.in @ONLY DESTINATION  ${SYSTEMD_USER_UNIT_INSTALL_DIR})
 
 install(FILES
    scripting/plasma-layouttemplate.desktop

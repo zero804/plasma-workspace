@@ -58,6 +58,7 @@ CalculatorRunner::CalculatorRunner(QObject *parent, const QVariantList &args)
     addSyntax(Plasma::RunnerSyntax(QStringLiteral(":q:="), description));
 
     addAction(QStringLiteral("copyToClipboard"), QIcon::fromTheme(QStringLiteral("edit-copy")), i18n("Copy to Clipboard"));
+    setMinLetterCount(3);
 }
 
 CalculatorRunner::~CalculatorRunner()
@@ -183,7 +184,14 @@ void CalculatorRunner::hexSubstitutions(QString& cmd)
 
 void CalculatorRunner::userFriendlySubstitutions(QString& cmd)
 {
-    cmd.replace(QLocale().decimalPoint(), QLatin1Char('.'), Qt::CaseInsensitive);
+    if (QLocale().decimalPoint() != QLatin1Char('.')) {
+        cmd.replace(QLocale().decimalPoint(), QLatin1Char('.'), Qt::CaseInsensitive);
+    } else if (!cmd.contains(QLatin1Char('[')) && !cmd.contains(QLatin1Char(']'))) {
+        // If we are sure that the user does not want to use vectors we can replace this char
+        // Especially when switching between locales that use a different decimal separator
+        // this ensures that the results are valid, see BUG: 406388
+        cmd.replace(QLatin1Char(','), QLatin1Char('.'), Qt::CaseInsensitive);
+    }
 
     // the following substitutions are not needed with libqalculate
 #ifndef ENABLE_QALCULATE
@@ -277,6 +285,7 @@ void CalculatorRunner::match(Plasma::RunnerContext &context)
         }
         match.setData(result);
         match.setId(term);
+        match.setActions(actions().values());
         context.addMatch(match);
     }
 }
@@ -334,13 +343,6 @@ void CalculatorRunner::run(const Plasma::RunnerContext &context, const Plasma::Q
         QGuiApplication::clipboard()->setText(match.text());
 #endif
     }
-}
-
-QList<QAction *> CalculatorRunner::actionsForMatch(const Plasma::QueryMatch &match)
-{
-    Q_UNUSED(match)
-
-    return actions().values();
 }
 
 QMimeData * CalculatorRunner::mimeDataForMatch(const Plasma::QueryMatch &match)

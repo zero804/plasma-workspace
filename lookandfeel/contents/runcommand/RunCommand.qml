@@ -29,6 +29,7 @@ ColumnLayout {
     property string query
     property string runner
     property bool showHistory: false
+    property string priorSearch
 
     LayoutMirroring.enabled: Qt.application.layoutDirection === Qt.RightToLeft
     LayoutMirroring.childrenInherit: true
@@ -43,9 +44,19 @@ ColumnLayout {
             if (runnerWindow.visible) {
                 queryField.forceActiveFocus();
                 listView.currentIndex = -1
+                if (runnerWindow.retainPriorSearch) {
+                    // If we manually specified a query(D-Bus invocation) we don't want to retain the prior search
+                    if (!query) {
+                        queryField.text = priorSearch
+                        queryField.select(root.query.length, 0)
+                    }
+                }
             } else {
-                root.query = "";
+                if (runnerWindow.retainPriorSearch) {
+                    priorSearch = root.query
+                }
                 root.runner = ""
+                root.query = ""
                 root.showHistory = false
             }
         }
@@ -72,6 +83,7 @@ ColumnLayout {
 
             clearButtonShown: true
             Layout.minimumWidth: units.gridUnit * 25
+            Layout.maximumWidth: units.gridUnit * 25
 
             activeFocusOnPress: true
             placeholderText: results.runnerName ? i18ndc("plasma_lookandfeel_org.kde.lookandfeel",
@@ -89,22 +101,21 @@ ColumnLayout {
                     rightMargin: height
                 }
 
-                Behavior on opacity {
-                    OpacityAnimator {
-                        duration: units.longDuration
-                        easing.type: Easing.InOutQuad
-                    }
-                }
-
                 Timer {
                     id: queryTimer
+                    property bool queryDisplay: false
                     running: results.querying
+                    repeat: true
+                    onRunningChanged: if (queryDisplay && !running) {
+                        queryDisplay = false
+                    }
+                    onTriggered: if (!queryDisplay) {
+                        queryDisplay = true
+                    }
                     interval: 500
                 }
 
-                opacity: !queryTimer.running && results.querying ? 1 : 0
-                visible: opacity > 0
-                running: visible
+                running: queryTimer.queryDisplay
             }
             function move_up() {
                 if (length === 0) {
@@ -181,7 +192,7 @@ ColumnLayout {
                     colorGroup: PlasmaCore.Theme.ButtonColorGroup
                 }
                 elementId: "down-arrow"
-                visible: queryField.length === 0
+                visible: queryField.length === 0 && runnerWindow.history.length > 0
 
                 MouseArea {
                     anchors.fill: parent
@@ -197,12 +208,14 @@ ColumnLayout {
             }
         }
         PlasmaComponents3.ToolButton {
-            icon.name: "window-close"
-            onClicked: runnerWindow.visible = false
-            Accessible.name: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Close")
-            Accessible.description: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Close Search")
+            checkable: true
+            checked: runnerWindow.pinned
+            onToggled: runnerWindow.pinned = checked
+            icon.name: "window-pin"
+            Accessible.name: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Pin")
+            Accessible.description: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Pin Search")
             PlasmaComponents3.ToolTip {
-                text: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Close")
+                text: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Keep Open")
             }
         }
     }

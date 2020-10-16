@@ -67,6 +67,13 @@ void KillRunner::reloadConfiguration()
     syntaxes << Plasma::RunnerSyntax(m_triggerWord + QStringLiteral(":q:"),
                                      i18n("Terminate running applications whose names match the query."));
     setSyntaxes(syntaxes);
+    if (m_hasTrigger) {
+        setTriggerWords({m_triggerWord});
+        setMinLetterCount(minLetterCount() + 2); // Requires two characters after trigger word
+    } else {
+        setMinLetterCount(2);
+        setMatchRegex(QRegularExpression());
+    }
 }
 
 void KillRunner::prep()
@@ -93,10 +100,6 @@ void KillRunner::cleanup()
 void KillRunner::match(Plasma::RunnerContext &context)
 {
     QString term = context.query();
-    if (m_hasTrigger && !term.startsWith(m_triggerWord, Qt::CaseInsensitive)) {
-        return;
-    }
-
     m_prepLock.lockForRead();
     if (!m_processes) {
         m_prepLock.unlock();
@@ -111,10 +114,6 @@ void KillRunner::match(Plasma::RunnerContext &context)
     m_prepLock.unlock();
 
     term = term.right(term.length() - m_triggerWord.length());
-
-    if (term.length() < 2)  {
-        return;
-    }
 
     QList<Plasma::QueryMatch> matches;
     const QList<KSysGuard::Process *> processlist = m_processes->getAllProcesses();
@@ -134,6 +133,7 @@ void KillRunner::match(Plasma::RunnerContext &context)
         match.setIconName(QStringLiteral("application-exit"));
         match.setData(pid);
         match.setId(name);
+        match.setActions(m_actionList);
 
         // Set the relevance
         switch (m_sorting) {
@@ -179,13 +179,6 @@ void KillRunner::run(const Plasma::RunnerContext &context, const Plasma::QueryMa
     killAction.addArgument(QStringLiteral("pidcount"), 1);
     killAction.addArgument(QStringLiteral("signal"), signal);
     killAction.execute();
-}
-
-QList<QAction*> KillRunner::actionsForMatch(const Plasma::QueryMatch &match)
-{
-    Q_UNUSED(match)
-
-    return m_actionList;
 }
 
 #include "killrunner.moc"

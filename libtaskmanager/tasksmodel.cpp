@@ -378,7 +378,7 @@ void TasksModel::Private::initModels()
                         }
 
                         if (appsMatch(sourceIndex, filterIndex)) {
-                            filterProxyModel->dataChanged(filterIndex, filterIndex);
+                            Q_EMIT filterProxyModel->dataChanged(filterIndex, filterIndex);
                         }
                     }
                 }
@@ -434,7 +434,7 @@ void TasksModel::Private::initModels()
                     const QModelIndex &idx = filterProxyModel->index(i, 0);
 
                     if (idx.data(AbstractTasksModel::IsLauncher).toBool()) {
-                        filterProxyModel->dataChanged(idx, idx);
+                        Q_EMIT filterProxyModel->dataChanged(idx, idx);
                     }
                 }
 
@@ -479,7 +479,7 @@ void TasksModel::Private::initModels()
                             }
 
                             if (appsMatch(sourceIndex, filterIndex)) {
-                                filterProxyModel->dataChanged(filterIndex, filterIndex);
+                                Q_EMIT filterProxyModel->dataChanged(filterIndex, filterIndex);
                             }
                         }
                     }
@@ -530,8 +530,8 @@ void TasksModel::Private::initLauncherTasksModel()
     // to-be-removed launcherTasksModel rows using TaskTools::appsMatch().
     QObject::connect(launcherTasksModel, &LauncherTasksModel::launcherListChanged,
         q, [this]() {
-            q->dataChanged(q->index(0, 0), q->index(q->rowCount() - 1, 0),
-                QVector<int>{AbstractTasksModel::HasLauncher});
+            Q_EMIT q->dataChanged(q->index(0, 0), q->index(q->rowCount() - 1, 0),
+                        QVector<int>{AbstractTasksModel::HasLauncher});
         }
     );
 
@@ -544,7 +544,7 @@ void TasksModel::Private::initLauncherTasksModel()
                     const QModelIndex &index = q->index(i, 0);
 
                     if (!index.data(AbstractTasksModel::IsLauncher).toBool()) {
-                        q->dataChanged(index, index, QVector<int>{AbstractTasksModel::HasLauncher});
+                        Q_EMIT q->dataChanged(index, index, QVector<int>{AbstractTasksModel::HasLauncher});
                     }
                 }
             }
@@ -1785,7 +1785,17 @@ void TasksModel::syncLaunchers()
         for (int i = 0; i < rowCount(); ++i) {
             const QUrl &rowLauncherUrl = index(i, 0).data(AbstractTasksModel::LauncherUrlWithoutIcon).toUrl();
 
-            if (launcherUrlsMatch(launcherUrl, rowLauncherUrl, IgnoreQueryItems)) {
+            // `LauncherTasksModel::launcherList()` returns data in a format suitable for writing
+            // to persistent configuration storage, e.g. `preferred://browser`. We mean to compare
+            // this last "save state" to a higher, resolved URL representation to compute the delta
+            // so we need to move the unresolved URLs through `TaskTools::appDataFromUrl()` first.
+            // TODO: This bypasses an existing lookup cache for the resolved app data that exists
+            // in LauncherTasksModel. It's likely a good idea to eventually move these caches out
+            // of the various models and share them among users of `TaskTools::appDataFromUrl()`,
+            // and then also do resolution implicitly in `TaskTools::launcherUrlsMatch`, to speed
+            // things up slightly and make the models simpler (central cache eviction, ...).
+            if (launcherUrlsMatch(appDataFromUrl(launcherUrl).url,
+                rowLauncherUrl, IgnoreQueryItems)) {
                 row = i;
                 break;
             }

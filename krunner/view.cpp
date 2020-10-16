@@ -51,7 +51,8 @@
 View::View(QWindow *)
     : PlasmaQuick::Dialog(),
       m_offset(.5),
-      m_floating(false)
+      m_floating(false),
+      m_retainPriorSearch(false)
 {
     setClearBeforeRendering(true);
     setColor(QColor(Qt::transparent));
@@ -87,8 +88,8 @@ View::View(QWindow *)
         package.setPath(packageName);
     }
 
-    m_qmlObj->setSource(package.fileUrl("runcommandmainscript"));
     m_qmlObj->engine()->rootContext()->setContextProperty(QStringLiteral("runnerWindow"), this);
+    m_qmlObj->setSource(package.fileUrl("runcommandmainscript"));
     m_qmlObj->completeInitialization();
 
     auto screenRemoved = [this](QScreen* screen) {
@@ -128,7 +129,7 @@ void View::objectIncubated()
 
 void View::slotFocusWindowChanged()
 {
-    if (!QGuiApplication::focusWindow()) {
+    if (!QGuiApplication::focusWindow() && !m_pinned) {
         setVisible(false);
     }
 }
@@ -157,11 +158,24 @@ void View::setFreeFloating(bool floating)
 void View::loadConfig()
 {
     setFreeFloating(m_config.readEntry("FreeFloating", false));
+    setPinned(m_config.readEntry("Pinned", false));
 
-    const QStringList history = m_config.readEntry("history", QStringList());
+    m_historyEnabled = m_config.readEntry("HistoryEnabled", true);
+    QStringList history;
+    if (m_historyEnabled) {
+        history = m_config.readEntry("history", QStringList());
+    }
     if (m_history != history) {
         m_history = history;
         emit historyChanged();
+    }
+    bool retainPriorSearch = m_config.readEntry("RetainPriorSearch", true);
+    if (retainPriorSearch != m_retainPriorSearch) {
+        m_retainPriorSearch = retainPriorSearch;
+        if (!m_retainPriorSearch) {
+            m_qmlObj->rootObject()->setProperty("query", QString());
+        }
+        Q_EMIT retainPriorSearchChanged();
     }
 }
 
@@ -287,7 +301,7 @@ void View::positionOnScreen()
     });
 }
 
-void View::displayOrHide()
+void View::toggleDisplay()
 {
     if (isVisible() && !QGuiApplication::focusWindow())  {
         KWindowSystem::forceActiveWindow(winId());
@@ -371,6 +385,9 @@ QStringList View::history() const
 
 void View::addToHistory(const QString &item)
 {
+    if (!m_historyEnabled) {
+        return;
+    }
     if (item.isEmpty()) {
         return;
     }
@@ -419,6 +436,9 @@ void View::removeFromHistory(int index)
 
 void View::writeHistory()
 {
+    if (!m_historyEnabled) {
+        return;
+    }
     m_config.writeEntry("history", m_history);
 }
 
@@ -432,3 +452,22 @@ void View::setVisible(bool visible)
         PlasmaQuick::Dialog::setVisible(visible);
     }
 }
+
+bool View::retainPriorSearch() const {
+    return m_retainPriorSearch;
+}
+
+bool View::pinned() const
+{
+    return m_pinned;
+}
+
+void View::setPinned(bool pinned)
+{
+    if (m_pinned != pinned) {
+        m_pinned = pinned;
+        m_config.writeEntry("Pinned", pinned);
+        Q_EMIT pinnedChanged();
+    }
+}
+

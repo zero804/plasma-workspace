@@ -3,6 +3,9 @@ add_definitions(-DTRANSLATION_DOMAIN=\"plasma_applet_org.kde.plasma.private.syst
 plasma_install_package(package org.kde.plasma.private.systemtray)
 
 set(systemtray_SRCS
+    dbusserviceobserver.cpp
+    plasmoidregistry.cpp
+    systemtraysettings.cpp
     systemtraymodel.cpp
     sortedsystemtraymodel.cpp
     systemtray.cpp
@@ -30,5 +33,6 @@ install(TARGETS org.kde.plasma.private.systemtray DESTINATION ${KDE_INSTALL_PLUG
 
 add_subdirectory(container)
 if(BUILD_TESTING)
+  add_subdirectory(autotests)
   add_subdirectory(tests)
 endif()

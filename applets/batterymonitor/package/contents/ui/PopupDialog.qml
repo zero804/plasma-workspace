@@ -41,6 +41,7 @@ PlasmaComponents3.Page {
         PowerManagementItem {
             id: pmSwitch
             width: parent.width
+            pluggedIn: dialog.pluggedIn
             onEnabledChanged: powermanagementChanged(enabled)
             KeyNavigation.tab: batteryList
             KeyNavigation.backtab: keyboardBrightnessSlider
@@ -87,6 +88,7 @@ PlasmaComponents3.Page {
 
                 icon: "input-keyboard-brightness"
                 label: i18n("Keyboard Brightness")
+                showPercentage: false
                 value: batterymonitor.keyboardBrightness
                 maximumValue: batterymonitor.maximumKeyboardBrightness
                 visible: isKeyboardBrightnessAvailable

@@ -38,13 +38,13 @@ PlacesRunner::PlacesRunner(QObject* parent, const QVariantList &args)
 {
     setObjectName(QStringLiteral("Places"));
     Plasma::RunnerSyntax defaultSyntax(i18n("places"), i18n("Lists all file manager locations"));
-    setDefaultSyntax(defaultSyntax);
     addSyntax(defaultSyntax);
     addSyntax(Plasma::RunnerSyntax(QStringLiteral(":q:"), i18n("Finds file manager locations that match :q:")));
 
     // ensure the bookmarkmanager, etc. in the places model gets creates created in the main thread
     // otherwise crashes ensue
     m_helper = new PlacesRunnerHelper(this);
+    setMinLetterCount(3);
 }
 
 PlacesRunner::~PlacesRunner()
@@ -89,11 +89,6 @@ void PlacesRunnerHelper::match(Plasma::RunnerContext *c)
     }
 
     const QString term = context.query();
-
-    if (term.length() < 3) {
-        return;
-    }
-
     QList<Plasma::QueryMatch> matches;
     const bool all = term.compare(i18n("places"), Qt::CaseInsensitive) == 0;
     for (int i = 0; i <= m_places.rowCount(); i++) {
@@ -120,7 +115,7 @@ void PlacesRunnerHelper::match(Plasma::RunnerContext *c)
             // Add category as subtext so one can tell "Pictures" folder from "Search for Pictures"
             // Don't add it if it would match the category ("Places") of the runner to avoid "Places: Pictures (Places)"
             const QString groupName = m_places.data(current_index, KFilePlacesModel::GroupRole).toString();
-            if (!groupName.isEmpty() && !static_cast<PlacesRunner *>(parent())->categories().contains(groupName)) {
+            if (!groupName.isEmpty() && static_cast<PlacesRunner *>(parent())->name() != groupName) {
                 match.setSubtext(groupName);
             }
 

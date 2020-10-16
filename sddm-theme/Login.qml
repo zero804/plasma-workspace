@@ -19,7 +19,7 @@ SessionManagementScreen {
     property int visibleBoundary: mapFromItem(loginButton, 0, 0).y
     onHeightChanged: visibleBoundary = mapFromItem(loginButton, 0, 0).y + loginButton.height + units.smallSpacing
 
-    property int fontSize: config.fontSize
+    property int fontSize: parseInt(config.fontSize)
 
     signal loginRequest(string username, string password)
 
@@ -112,9 +112,8 @@ SessionManagementScreen {
         PlasmaComponents3.Button {
             id: loginButton
             Accessible.name: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Log In")
-            implicitHeight: passwordBox.height - units.smallSpacing * 0.5 // otherwise it comes out taller than the password field
-            implicitWidth: implicitHeight
-            Layout.rightMargin: 1 // prevents it from extending beyond the username field
+            Layout.preferredHeight: passwordBox.implicitHeight
+            Layout.preferredWidth: loginButton.Layout.preferredHeight
 
             icon.name: "go-next"
 

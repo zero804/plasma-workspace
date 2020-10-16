@@ -79,7 +79,7 @@ ColumnLayout {
     property var header: PlasmaExtras.PlasmoidHeading {
         RowLayout {
             anchors.fill: parent
-            enabled: clipboardMenu.model.count > 0
+            enabled: clipboardMenu.model.count > 0 || filter.text.length > 0
 
             PlasmaComponents3.TextField {
                 id: filter
@@ -89,11 +89,24 @@ ColumnLayout {
             }
             PlasmaComponents3.ToolButton {
                 icon.name: "edit-clear-history"
-                onClicked: clipboardSource.service("", "clearHistory")
+                onClicked: {
+                    clipboardSource.service("", "clearHistory")
+                    filter.clear()
+                }
 
                 PlasmaComponents3.ToolTip {
                     text: i18n("Clear history")
                 }
+            }
+            PlasmaComponents3.ToolButton {
+                visible: plasmoid.action("configure").enabled
+                icon.name: "configure"
+                onClicked: plasmoid.action("configure").trigger()
+
+                PlasmaComponents3.ToolTip {
+                    text: plasmoid.action("configure").text
+                }
+                Accessible.name: plasmoid.action("configure").text
             }
         }
     }

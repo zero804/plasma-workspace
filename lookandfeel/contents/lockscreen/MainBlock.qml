@@ -87,7 +87,7 @@ SessionManagementScreen {
 
             Connections {
                 target: root
-                onClearPassword: {
+                function onClearPassword() {
                     passwordBox.forceActiveFocus()
                     passwordBox.text = "";
                 }
@@ -97,8 +97,8 @@ SessionManagementScreen {
         PlasmaComponents3.Button {
             id: loginButton
             Accessible.name: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Unlock")
-            implicitHeight: passwordBox.height - units.smallSpacing * 0.5 // otherwise it comes out taller than the password field
-            implicitWidth: implicitHeight
+            Layout.preferredHeight: passwordBox.implicitHeight
+            Layout.preferredWidth: loginButton.Layout.preferredHeight
 
             icon.name: "go-next"
 

@@ -29,7 +29,7 @@ import org.kde.kcoreaddons 1.0 as KCoreAddons
 import org.kde.kirigami 2.4 as Kirigami
 import QtGraphicalEffects 1.0
 
-Item {
+PlasmaComponents3.Page {
     id: expandedRepresentation
 
     Layout.minimumWidth: units.gridUnit * 14
@@ -414,19 +414,20 @@ Item {
             }
         }
 
-        Row { // Player Controls
+        RowLayout { // Player Controls
             id: playerControls
 
             property bool enabled: root.canControl
             property int controlsSize: theme.mSize(theme.defaultFont).height * 3
 
             Layout.alignment: Qt.AlignHCenter
-            spacing: units.largeSpacing
+            Layout.bottomMargin: PlasmaCore.Units.largeSpacing
+            spacing: units.smallSpacing
 
             PlasmaComponents3.ToolButton { // Previous
-                anchors.verticalCenter: parent.verticalCenter
-                width: expandedRepresentation.controlSize
-                height: width
+                Layout.alignment: Qt.AlignVCenter
+                implicitWidth: expandedRepresentation.controlSize
+                implicitHeight: implicitWidth
                 enabled: playerControls.enabled && root.canGoPrevious
                 icon.name: LayoutMirroring.enabled ? "media-skip-forward" : "media-skip-backward"
                 onClicked: {
@@ -436,17 +437,18 @@ Item {
             }
 
             PlasmaComponents3.ToolButton { // Pause/Play
-                width: Math.round(expandedRepresentation.controlSize * 1.5)
-                height: width
+                Layout.alignment: Qt.AlignVCenter
+                implicitWidth: Math.round(expandedRepresentation.controlSize * 1.5)
+                implicitHeight: implicitWidth
                 enabled: root.state == "playing" ? root.canPause : root.canPlay
                 icon.name: root.state == "playing" ? "media-playback-pause" : "media-playback-start"
                 onClicked: root.togglePlaying()
             }
 
             PlasmaComponents3.ToolButton { // Next
-                anchors.verticalCenter: parent.verticalCenter
-                width: expandedRepresentation.controlSize
-                height: width
+                Layout.alignment: Qt.AlignVCenter
+                implicitWidth: expandedRepresentation.controlSize
+                implicitHeight: implicitWidth
                 enabled: playerControls.enabled && root.canGoNext
                 icon.name: LayoutMirroring.enabled ? "media-skip-backward" : "media-skip-forward"
                 onClicked: {
@@ -455,32 +457,48 @@ Item {
                 }
             }
         }
+    }
 
-        PlasmaComponents3.ComboBox {
-            Layout.fillWidth: true
-            Layout.leftMargin: units.gridUnit*2
-            Layout.rightMargin: units.gridUnit*2
+    footer: PlasmaExtras.PlasmoidHeading {
+        //this removes top padding to allow tabbar to touch the edge 
+        topPadding: -topInset
+        location: PlasmaExtras.PlasmoidHeading.Location.Footer
+        visible: playerList.model.length > 2 // more than one player, @multiplex is always there
 
-            id: playerCombo
-            textRole: "text"
-            visible: model.length > 2 // more than one player, @multiplex is always there
-            model: root.mprisSourcesModel
+        RowLayout {
+            anchors.fill: parent
 
-            onModelChanged: {
-                // if model changes, ComboBox resets, so we try to find the current player again...
-                for (var i = 0, length = model.length; i < length; ++i) {
-                    if (model[i].source === mpris2Source.current) {
-                        currentIndex = i
-                        break
+            PlasmaComponents3.TabBar {
+                id: playerSelector
+                position: PlasmaComponents3.TabBar.Footer
+
+                Layout.fillWidth: true
+                implicitHeight: contentHeight
+
+                Repeater {
+                    id: playerList
+                    model: root.mprisSourcesModel
+
+                    delegate: PlasmaComponents3.TabButton {
+                        icon.name: modelData["icon"]
+                        icon.height: PlasmaCore.Units.iconSizes.smallMedium
+                        Accessible.name: modelData["text"]
+                        PlasmaComponents3.ToolTip {
+                            text: modelData["text"]
+                        }
+                        onClicked: {
+                            disablePositionUpdate = true
+                            mpris2Source.current = modelData["source"];
+                            disablePositionUpdate = false
+                        }
+                    }
+
+                    onModelChanged: {
+                        playerSelector.currentIndex = model.findIndex(
+                            (data) => { return data.source === mpris2Source.current }
+                        )
                     }
                 }
-            }
-
-            onActivated: {
-                disablePositionUpdate = true
-                // ComboBox has currentIndex and currentText, why doesn't it have currentItem/currentModelValue?
-                mpris2Source.current = model[index].source
-                disablePositionUpdate = false
             }
         }
     }

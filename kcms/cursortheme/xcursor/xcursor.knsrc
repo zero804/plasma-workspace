@@ -1,0 +1,36 @@
+[KNewStuff3]
+Name=Cursors
+Name[az]=Kursorlar
+Name[ca]=Cursors
+Name[cs]=Kurzory
+Name[da]=Markører
+Name[de]=Zeiger
+Name[en_GB]=Cursors
+Name[es]=Cursores
+Name[et]=Kursorid
+Name[eu]=Kurtsoreak
+Name[fr]=Pointeurs
+Name[it]=Puntatori
+Name[ko]=커서
+Name[nl]=Cursors
+Name[nn]=Peikarar
+Name[pa]=ਕਰਸਰਾਂ
+Name[pl]=Wskaźniki
+Name[pt]=Cursores
+Name[pt_BR]=Cursores
+Name[ro]=Cursori
+Name[ru]=Курсоры мыши
+Name[sk]=Kurzory
+Name[sl]=Kazalke
+Name[sv]=Pekare
+Name[tg]=Курсорҳои муш
+Name[uk]=Вказівники
+Name[vi]=Con trỏ
+Name[x-test]=xxCursorsxx
+Name[zh_CN]=光标
+
+ProvidersUrl=https://autoconfig.kde.org/ocs/providers.xml
+Categories=X11 Mouse Theme
+InstallPath=.icons
+Uncompress=always
+RemoveDeadEntries=true

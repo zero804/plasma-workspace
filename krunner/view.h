@@ -49,6 +49,8 @@ class View : public PlasmaQuick::Dialog
 
     Q_PROPERTY(bool canConfigure READ canConfigure CONSTANT)
     Q_PROPERTY(QStringList history READ history NOTIFY historyChanged)
+    Q_PROPERTY(bool retainPriorSearch READ retainPriorSearch NOTIFY retainPriorSearchChanged)
+    Q_PROPERTY(bool pinned READ pinned WRITE setPinned NOTIFY pinnedChanged)
 
 public:
     explicit View(QWindow *parent = nullptr);
@@ -65,8 +67,15 @@ public:
     Q_INVOKABLE void addToHistory(const QString &item);
     Q_INVOKABLE void removeFromHistory(int index);
 
+    bool retainPriorSearch() const;
+
+    bool pinned() const;
+    void setPinned(bool pinned);
+
 Q_SIGNALS:
     void historyChanged();
+    void retainPriorSearchChanged();
+    void pinnedChanged();
 
 protected:
     bool event(QEvent* event) override;
@@ -76,6 +85,7 @@ protected:
 public Q_SLOTS:
     void setVisible(bool visible);
     void display();
+    void toggleDisplay();
     void displaySingleRunner(const QString &runnerName);
     void displayWithClipboardContents();
     void query(const QString &term);
@@ -86,7 +96,6 @@ public Q_SLOTS:
 protected Q_SLOTS:
     void screenGeometryChanged();
     void resetScreenPos();
-    void displayOrHide();
     void loadConfig();
     void objectIncubated();
     void slotFocusWindowChanged();
@@ -101,6 +110,9 @@ private:
     bool m_floating : 1;
     bool m_requestedVisible = false;
     QStringList m_history;
+    bool m_retainPriorSearch;
+    bool m_historyEnabled;
+    bool m_pinned = false;
 };
 
 

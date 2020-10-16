@@ -42,6 +42,7 @@ DesktopView::DesktopView(Plasma::Corona *corona, QScreen *targetScreen)
       m_windowType(Desktop),
       m_shellSurface(nullptr)
 {
+    QObject::setParent(corona);
     if (targetScreen) {
         setScreenToFollow(targetScreen);
         setScreen(targetScreen);
@@ -64,18 +65,6 @@ DesktopView::DesktopView(Plasma::Corona *corona, QScreen *targetScreen)
                      this, &DesktopView::candidateContainmentsChanged);
     QObject::connect(m_activityController, &KActivities::Controller::activityRemoved,
                      this, &DesktopView::candidateContainmentsChanged);
-
-    if (rendererInterface()->graphicsApi() != QSGRendererInterface::Software) {
-        connect(this, &DesktopView::sceneGraphInitialized, this,
-            [this, corona]() {
-                // check whether the GL Context supports OpenGL
-                // Note: hasOpenGLShaderPrograms is broken, see QTBUG--39730
-                if (!QOpenGLShaderProgram::hasOpenGLShaderPrograms(openglContext())) {
-                    qWarning() << "GLSL not available, Plasma won't be functional";
-                    QMetaObject::invokeMethod(corona, "glInitializationFailed", Qt::QueuedConnection);
-                }
-            }, Qt::DirectConnection);
-    }
 }
 
 DesktopView::~DesktopView()
@@ -236,9 +225,41 @@ bool DesktopView::event(QEvent *e)
             m_shellSurface = nullptr;
             break;
         }
+    } else if (e->type() == QEvent::FocusOut) {
+        m_krunnerText.clear();
     }
 
     return PlasmaQuick::ContainmentView::event(e);
+}
+
+bool DesktopView::handleKRunnerTextInput(QKeyEvent *e)
+{
+    // allow only Shift and GroupSwitch modifiers
+    if (e->modifiers() & ~Qt::ShiftModifier & ~Qt::GroupSwitchModifier) {
+        return false;
+    }
+    bool krunnerTextChanged = false;
+    const QString eventText = e->text();
+    for (const QChar ch : eventText) {
+        if (!ch.isPrint()) {
+            continue;
+        }
+        if (ch.isSpace() && m_krunnerText.isEmpty()) {
+            continue;
+        }
+        m_krunnerText += ch;
+        krunnerTextChanged = true;
+    }
+    if (krunnerTextChanged) {
+        const QString interface(QStringLiteral("org.kde.krunner"));
+        if (!KAuthorized::authorize(QStringLiteral("run_command"))) {
+            return false;
+        }
+        org::kde::krunner::App krunner(interface, QStringLiteral("/App"), QDBusConnection::sessionBus());
+        krunner.query(m_krunnerText);
+        return true;
+    }
+    return false;
 }
 
 void DesktopView::keyPressEvent(QKeyEvent *e)
@@ -256,18 +277,9 @@ void DesktopView::keyPressEvent(QKeyEvent *e)
     }
 
     // When a key is pressed on desktop when nothing else is active forward the key to krunner
-    if (!e->modifiers() || e->modifiers() == Qt::ShiftModifier) {
-        const QString text = e->text().trimmed();
-        if (!text.isEmpty() && text[0].isPrint()) {
-            const QString interface(QStringLiteral("org.kde.krunner"));
-            if (!KAuthorized::authorize(QStringLiteral("run_command"))) {
-                return;
-            }
-            org::kde::krunner::App krunner(interface, QStringLiteral("/App"), QDBusConnection::sessionBus());
-            krunner.query(text);
-            e->accept();
-            return;
-        }
+    if (handleKRunnerTextInput(e)) {
+        e->accept();
+        return;
     }
 }
 
