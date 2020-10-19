@@ -25,7 +25,7 @@ import QtQuick.Dialogs 1.1
 
 import org.kde.plasma.private.digitalclock 1.0
 import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.kirigami 2.5 as Kirigami
+import org.kde.kirigami 2.8 as Kirigami
 
 ColumnLayout {
     id: timeZonesPage
@@ -54,10 +54,9 @@ ColumnLayout {
         showCloseButton: true
     }
 
-    QQC2.TextField {
+    Kirigami.SearchField {
         id: filter
         Layout.fillWidth: true
-        placeholderText: i18n("Search Time Zones")
     }
 
     Item {
@@ -82,7 +81,7 @@ ColumnLayout {
                 delegate: QQC2.CheckDelegate {
                     id: checkbox
                     focus: true // keyboard navigation
-                    width: parent.width
+                    width: listView.width
                     text: !city || city.indexOf("UTC") === 0 ? comment : comment ? i18n("%1, %2 (%3)", city, region, comment) : i18n("%1, %2", city, region)
                     checked: model.checked
                     onToggled: {
