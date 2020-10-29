@@ -21,6 +21,7 @@ import QtQuick 2.8
 
 import QtQuick.Layouts 1.1
 import QtQuick.Controls 1.1
+import QtQuick.Controls 2.12 as QQC2
 import QtGraphicalEffects 1.0
 
 import org.kde.plasma.core 2.0 as PlasmaCore
@@ -153,7 +154,7 @@ PlasmaCore.ColorScope {
             anchors.horizontalCenter: parent.horizontalCenter
         }
 
-        StackView {
+        QQC2.StackView {
             id: mainStack
             anchors {
                 left: parent.left
@@ -247,6 +248,68 @@ PlasmaCore.ColorScope {
             Behavior on opacity {
                 OpacityAnimator {
                     duration: units.longDuration
+                }
+            }
+
+            readonly property real zoomFactor: 3
+
+            popEnter: Transition {
+                ScaleAnimator {
+                    from: mainStack.zoomFactor
+                    to: 1
+                    duration: PlasmaCore.Units.longDuration * (mainStack.zoomFactor / 2)
+                    easing.type: Easing.OutCubic
+                }
+                OpacityAnimator {
+                    from: 0
+                    to: 1
+                    duration: PlasmaCore.Units.longDuration * (mainStack.zoomFactor / 2)
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            popExit: Transition {
+                ScaleAnimator {
+                    from: 1
+                    to: 0
+                    duration: PlasmaCore.Units.longDuration * (mainStack.zoomFactor / 2)
+                    easing.type: Easing.OutCubic
+                }
+                OpacityAnimator {
+                    from: 1
+                    to: 0
+                    duration: PlasmaCore.Units.longDuration * (mainStack.zoomFactor / 2)
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            pushEnter: Transition {
+                ScaleAnimator {
+                    from: 0
+                    to: 1
+                    duration: PlasmaCore.Units.longDuration * (mainStack.zoomFactor / 2)
+                    easing.type: Easing.OutCubic
+                }
+                OpacityAnimator {
+                    from: 0
+                    to: 1
+                    duration: PlasmaCore.Units.longDuration * (mainStack.zoomFactor / 2)
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            pushExit: Transition {
+                ScaleAnimator {
+                    from: 1
+                    to: mainStack.zoomFactor
+                    duration: PlasmaCore.Units.longDuration * (mainStack.zoomFactor / 2)
+                    easing.type: Easing.OutCubic
+                }
+                OpacityAnimator {
+                    from: 1
+                    to: 0
+                    duration: PlasmaCore.Units.longDuration * (mainStack.zoomFactor / 2)
+                    easing.type: Easing.OutCubic
                 }
             }
         }
