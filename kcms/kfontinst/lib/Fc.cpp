@@ -49,13 +49,16 @@ namespace FC
 QUrl encode(const QString &name, quint32 style, const QString &file, int index)
 {
     QUrl url(QUrl::fromLocalFile(name));
+    QUrlQuery query;
 
     url.setScheme(FC_PROTOCOL);
-    url.addQueryItem(FC_STYLE_QUERY, QString::number(style));
+    query.addQueryItem(FC_STYLE_QUERY, QString::number(style));
     if(!file.isEmpty())
-        url.addQueryItem(FC_FILE_QUERY, file);
+        query.addQueryItem(FC_FILE_QUERY, file);
     if(index>0)
-        url.addQueryItem(FC_INDEX_QUERY, QString::number(index));
+        query.addQueryItem(FC_INDEX_QUERY, QString::number(index));
+
+    url.setQuery(query);
     return url;
 }
 
@@ -344,12 +347,7 @@ quint32 createStyleVal(const QString &name)
 
 QString styleValToStr(quint32 style)
 {
-    QString str;
-    int     weight, width, slant;
-
-    decomposeStyleVal(style, weight, width, slant);
-    str.sprintf("0X%02X%02X%02X\n", weight, width, slant);
-    return str;
+    return QStringLiteral("0X%1\n").arg(style, 6, 16, QLatin1Char('0')).toUpper();
 }
 
 void decomposeStyleVal(quint32 styleInfo, int &weight, int &width, int &slant)
@@ -389,7 +387,6 @@ QString getFcString(FcPattern *pat, const char *val, int index)
 // ...so if possible, use that. Else, use the first non "xx" lang.
 QString getFcLangString(FcPattern *pat, const char *val, const char *valLang)
 {
-    QString rv;
     int     langIndex=-1;
 
     for(int i=0; true; ++i)

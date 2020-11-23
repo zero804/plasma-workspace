@@ -112,7 +112,7 @@ QString PlasmaAppletItem::author() const
         return QString();
     }
 
-    return m_info.authors().first().name();
+    return m_info.authors().constFirst().name();
 }
 
 QString PlasmaAppletItem::email() const
@@ -121,7 +121,7 @@ QString PlasmaAppletItem::email() const
         return QString();
     }
 
-    return m_info.authors().first().emailAddress();
+    return m_info.authors().constFirst().emailAddress();
 }
 
 int PlasmaAppletItem::running() const
@@ -141,7 +141,7 @@ bool PlasmaAppletItem::matches(const QString &pattern) const
     const QString keywordsList = KPluginMetaData::readTranslatedString(m_info.rawData(), QStringLiteral("Keywords"));
     const auto keywords = keywordsList.splitRef(QLatin1Char(';'), Qt::SkipEmptyParts);
 
-    for (const auto keyword : keywords) {
+    for (const auto &keyword : keywords) {
         if (keyword.startsWith(pattern, Qt::CaseInsensitive)) {
             return true;
         }

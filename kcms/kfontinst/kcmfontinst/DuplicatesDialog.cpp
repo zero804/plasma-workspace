@@ -23,11 +23,9 @@
 
 #include "DuplicatesDialog.h"
 #include "ActionLabel.h"
-#include "Misc.h"
 #include "Fc.h"
 #include "FcEngine.h"
 #include "FontList.h"
-#include "JobRunner.h"
 #include <KIconLoader>
 #include <KMessageBox>
 #include <KFileItem>
@@ -58,7 +56,7 @@ enum EDialogColumns
     COL_TRASH,
     COL_SIZE,
     COL_DATE,
-    COL_LINK
+    COL_LINK,
 };
 
 CDuplicatesDialog::CDuplicatesDialog(QWidget *parent, CFontList *fl)
@@ -170,7 +168,7 @@ void CDuplicatesDialog::scanFinished()
                         tt++;
                 }
                 top->setData(COL_FILE, Qt::DecorationRole,
-                             QVariant(SmallIcon(t1>tt ? "application-x-font-type1" : "application-x-font-ttf")));
+                             QIcon::fromTheme(t1>tt ? "application-x-font-type1" : "application-x-font-ttf"));
                 top->setFont(COL_FILE, boldFont);
             }
 
@@ -207,7 +205,7 @@ enum EStatus
     STATUS_NO_FILES,
     STATUS_ALL_REMOVED,
     STATUS_ERROR,
-    STATUS_USER_CANCELLED
+    STATUS_USER_CANCELLED,
 };
 
 void CDuplicatesDialog::slotButtonClicked(QAbstractButton *button)
@@ -397,7 +395,7 @@ void CFontFileList::fileDuplicates(const QString &folder, const QSet<TFile> &fil
 
 inline void markItem(QTreeWidgetItem *item)
 {
-    item->setData(COL_TRASH, Qt::DecorationRole, QVariant(SmallIcon("list-remove")));
+    item->setData(COL_TRASH, Qt::DecorationRole, QIcon::fromTheme("list-remove"));
 }
 
 inline void unmarkItem(QTreeWidgetItem *item)
@@ -420,7 +418,7 @@ CFontFileListView::CFontFileListView(QWidget *parent)
     headers.append(i18n("Date"));
     headers.append(i18n("Links To"));
     setHeaderLabels(headers);
-    headerItem()->setData(COL_TRASH, Qt::DecorationRole, QVariant(SmallIcon("user-trash")));
+    headerItem()->setData(COL_TRASH, Qt::DecorationRole, QIcon::fromTheme("user-trash"));
     setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
     setSelectionMode(ExtendedSelection);
     sortByColumn(COL_FILE, Qt::AscendingOrder);

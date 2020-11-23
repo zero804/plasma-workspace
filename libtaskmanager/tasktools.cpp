@@ -30,7 +30,6 @@ License along with this library.  If not, see <http://www.gnu.org/licenses/>.
 #include <KNotificationJobUiDelegate>
 #include <KRun>
 #include <KServiceTypeTrader>
-#include <KSharedConfig>
 #include <KStartupInfo>
 #include <KWindowSystem>
 #include <KProcessList>
@@ -701,7 +700,7 @@ QString defaultApplication(const QUrl &url)
         }
     }
 
-    return QString("");
+    return QLatin1String("");
 }
 
 bool launcherUrlsMatch(const QUrl &a, const QUrl &b, UrlComparisonMode mode)

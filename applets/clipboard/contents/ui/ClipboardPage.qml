@@ -86,8 +86,17 @@ ColumnLayout {
                 placeholderText: i18n("Search...")
                 clearButtonShown: true
                 Layout.fillWidth: true
+
+                Connections {
+                    target: main
+                    function onClearSearchField() {
+                        filter.clear()
+                    }
+                }
             }
             PlasmaComponents3.ToolButton {
+                visible: !(plasmoid.containmentDisplayHints & PlasmaCore.Types.ContainmentDrawsPlasmoidHeading)
+
                 icon.name: "edit-clear-history"
                 onClicked: {
                     clipboardSource.service("", "clearHistory")
@@ -97,16 +106,6 @@ ColumnLayout {
                 PlasmaComponents3.ToolTip {
                     text: i18n("Clear history")
                 }
-            }
-            PlasmaComponents3.ToolButton {
-                visible: plasmoid.action("configure").enabled
-                icon.name: "configure"
-                onClicked: plasmoid.action("configure").trigger()
-
-                PlasmaComponents3.ToolTip {
-                    text: plasmoid.action("configure").text
-                }
-                Accessible.name: plasmoid.action("configure").text
             }
         }
     }

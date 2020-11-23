@@ -27,7 +27,6 @@
 #include <QMap>
 #include <QVector>
 #include <QDir>
-#include <QFile>
 #include <QByteArray>
 #include <QTextCodec>
 #include <QTextStream>
@@ -35,7 +34,6 @@
 #include <QTemporaryFile>
 #include <QStandardPaths>
 #include <QUrlQuery>
-#include <unistd.h>
 #include <ctype.h>
 
 namespace KFI
@@ -421,8 +419,7 @@ QMap<QString, QString> getFontFileMap(const QSet<QString> &files)
         {
             QVector<QString>             orig(fIt.value().count()),
                                          modified(fIt.value().count());
-            QSet<QString>::ConstIterator oIt(fIt.value().constBegin()),
-                                         oEnd(fIt.value().constEnd());
+            QSet<QString>::ConstIterator oIt(fIt.value().constBegin());
             bool                         good=true;
             int                          count=fIt.value().count();
 

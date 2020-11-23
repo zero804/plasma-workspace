@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Battery and Brightness
 Name[ar]=البطّاريّة والسّطوع
-Name[ast]=Batería y brilléu
+Name[ast]=Batería y brillu
 Name[az]=Batareya və Parlaqlıq
 Name[ca]=Bateria i lluminositat
 Name[ca@valencia]=Bateria i brillantor
@@ -92,7 +92,7 @@ Comment[ko]=배터리 상태를 표시합니다
 Comment[lt]=Rodyti akumuliatoriaus įkrovą
 Comment[lv]=Rāda baterijas izlādes stāvokli
 Comment[mk]=Видете го енергетскиот статус на вашата батерија
-Comment[ml]=നിങ്ങളുടെ ബാറ്ററിയുടെ വൈദ്യുതോര്‍ജ്ജ സ്ഥിതി കാണുക
+Comment[ml]=നിങ്ങളുടെ ബാറ്ററിയുടെ വൈദ്യുതി ഊര്‍ജ്ജ സ്ഥിതി കാണുക
 Comment[mr]=बॅटरीची पॉवर स्थिती पहा
 Comment[nb]=Se ladningstilstanden for batteriet
 Comment[nds]=Den Tostand vun Dien Batterien bekieken
@@ -172,7 +172,7 @@ Keywords[sr@latin]=Power Management;Battery;System;Energy;upravljanje napajanjem
 Keywords[sv]=Strömhantering;Batteri;System;Energi;
 Keywords[tr]=Güç Yönetimi;Pil;Sistem;Enerji;
 Keywords[uk]=Power Management;Battery;System;Energy;керування живленням;акумулятор;система;енергія;батарея;батарейка;живлення;
-Keywords[vi]=Quản lí nguồn điện;Pin;Hệ thống;Năng lượng;
+Keywords[vi]=Power Management;Battery;System;Energy;Quản lí nguồn điện;Pin;Hệ thống;Năng lượng;
 Keywords[x-test]=xxPower Managementxx;xxBatteryxx;xxSystemxx;xxEnergyxx;
 Keywords[zh_CN]=电源管理;电池;系统;能源;
 Keywords[zh_TW]=Power Management;Battery;System;Energy;

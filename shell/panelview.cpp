@@ -32,7 +32,6 @@
 #include <QQmlContext>
 #include <QGuiApplication>
 #include <QRegularExpression>
-#include <QTimer>
 
 #include <kactioncollection.h>
 #include <kwindowsystem.h>
@@ -1248,10 +1247,10 @@ void PanelView::handleQmlStatusChange(QQmlComponent::Status status)
                    this, &PanelView::handleQmlStatusChange);
 
         updatePadding();
-        connect(rootObject, SIGNAL(bottomPaddingChanged()), this, SLOT(PanelView::updatePadding));
-        connect(rootObject, SIGNAL(topPaddingChanged()), this, SLOT(PanelView::updatePadding));
-        connect(rootObject, SIGNAL(rightPaddingChanged()), this, SLOT(PanelView::updatePadding));
-        connect(rootObject, SIGNAL(leftPaddingChanged()), this, SLOT(PanelView::updatePadding));
+        connect(rootObject, SIGNAL(bottomPaddingChanged()), this, SLOT(updatePadding()));
+        connect(rootObject, SIGNAL(topPaddingChanged()), this, SLOT(updatePadding()));
+        connect(rootObject, SIGNAL(rightPaddingChanged()), this, SLOT(updatePadding()));
+        connect(rootObject, SIGNAL(leftPaddingChanged()), this, SLOT(updatePadding()));
 
         const QVariant maskProperty = rootObject->property("panelMask");
         if (static_cast<QMetaType::Type>(maskProperty.type()) == QMetaType::QRegion) {

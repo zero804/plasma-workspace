@@ -155,8 +155,8 @@ KSMShutdownDlg::KSMShutdownDlg(QWindow* parent,
     // engine stuff
     KDeclarative::KDeclarative kdeclarative;
     kdeclarative.setDeclarativeEngine(engine());
-    kdeclarative.setupBindings();
-//    windowContainer->installEventFilter(this);
+    kdeclarative.setupEngine(engine());
+    engine()->rootContext()->setContextObject(new KLocalizedContext(engine()));
 }
 
 void KSMShutdownDlg::init()
@@ -164,7 +164,6 @@ void KSMShutdownDlg::init()
     rootContext()->setContextProperty(QStringLiteral("screenGeometry"), screen()->geometry());
 
     QString fileName;
-    QString fileUrl;
     KPackage::Package package = KPackage::PackageLoader::self()->loadPackage(QStringLiteral("Plasma/LookAndFeel"));
     KConfigGroup cg(KSharedConfig::openConfig(QStringLiteral("kdeglobals")), "KDE");
     const QString packageName = cg.readEntry("LookAndFeelPackage", QString());
@@ -308,10 +307,11 @@ void KSMShutdownDlg::slotSuspend(int spdMethod)
 {
     m_bootOption.clear();
     switch (spdMethod) {
-        case 0: //Solid::PowerManagement::StandbyState:
-        case 1: //Solid::PowerManagement::SuspendState:
+        case 1: //Solid::PowerManagement::StandbyState:
+        case 2: //Solid::PowerManagement::SuspendState:
             m_session.suspend();
-        case 2:// Solid::PowerManagement::HibernateState:
+            break;
+        case 4:// Solid::PowerManagement::HibernateState:
             m_session.hibernate();
             break;
     }

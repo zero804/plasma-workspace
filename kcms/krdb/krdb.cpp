@@ -223,14 +223,9 @@ static void applyQtSettings( KSharedConfigPtr kglobalcfg, QSettings& settings )
 
 static void addColorDef(QString& s, const char* n, const QColor& col)
 {
-  QString tmp;
-
-  tmp.sprintf("#define %s #%02x%02x%02x\n",
-              n, col.red(), col.green(), col.blue());
-
-  s += tmp;
+  s += QStringLiteral("#define %1 ").arg(QString::fromUtf8(n));
+  s += col.name().toLower();
 }
-
 
 // -----------------------------------------------------------------------------
 
@@ -301,7 +296,7 @@ static void createGtkrc( const QPalette& cg, bool exportGtkTheme, const QString&
         if (!exist_gtkrc)
         {
             QString gtk2ThemeFilename;
-            gtk2ThemeFilename = QStringLiteral("%1/.themes/%2/gtk-2.0/gtkrc").arg(QDir::homePath()).arg(gtkStyle);
+            gtk2ThemeFilename = QStringLiteral("%1/.themes/%2/gtk-2.0/gtkrc").arg(QDir::homePath(), gtkStyle);
             if (!QFile::exists(gtk2ThemeFilename)) {
                 QStringList gtk2ThemePath;
                 gtk2ThemeFilename.clear();
@@ -311,7 +306,7 @@ static void createGtkrc( const QPalette& cg, bool exportGtkTheme, const QString&
                 gtk2ThemePath.removeDuplicates();
                 for (int i = 0; i < gtk2ThemePath.size(); ++i)
                 {
-                    gtk2ThemeFilename = QStringLiteral("%1/themes/%2/gtk-2.0/gtkrc").arg(gtk2ThemePath.at(i)).arg(gtkStyle);
+                    gtk2ThemeFilename = QStringLiteral("%1/themes/%2/gtk-2.0/gtkrc").arg(gtk2ThemePath.at(i), gtkStyle);
                     if (QFile::exists(gtk2ThemeFilename))
                         break;
                     else
@@ -421,8 +416,8 @@ void runRdb( uint flags )
 
   // Export the Xcursor theme & size settings
   KConfigGroup mousecfg(KSharedConfig::openConfig( QStringLiteral("kcminputrc") ), "Mouse" );
-  QString theme = mousecfg.readEntry("cursorTheme", QString("breeze_cursors"));
-  QString size  = mousecfg.readEntry("cursorSize", QString("24"));
+  QString theme = mousecfg.readEntry("cursorTheme", QStringLiteral("breeze_cursors"));
+  QString size  = mousecfg.readEntry("cursorSize", QStringLiteral("24"));
   QString contents;
 
   if (!theme.isNull())

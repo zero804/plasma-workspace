@@ -1,5 +1,6 @@
 [KNewStuff3]
 Name=Cursors
+Name[ast]=Cursores
 Name[az]=Kursorlar
 Name[ca]=Cursors
 Name[cs]=Kurzory
@@ -10,8 +11,11 @@ Name[es]=Cursores
 Name[et]=Kursorid
 Name[eu]=Kurtsoreak
 Name[fr]=Pointeurs
+Name[hu]=Kurzorok
+Name[ia]=Cursores
 Name[it]=Puntatori
 Name[ko]=커서
+Name[lt]=Žymekliai
 Name[nl]=Cursors
 Name[nn]=Peikarar
 Name[pa]=ਕਰਸਰਾਂ

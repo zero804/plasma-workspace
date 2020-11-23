@@ -71,7 +71,7 @@ int main(int argc, char **argv)
     }
     
     if (parser.isSet(_list)) {
-        QList<KPluginMetaData> pkgs = KPackage::PackageLoader::self()->listPackages("Plasma/LookAndFeel");
+        const QList<KPluginMetaData> pkgs = KPackage::PackageLoader::self()->listPackages("Plasma/LookAndFeel");
 
         for (const KPluginMetaData &data : pkgs) {
             std::cout << data.pluginId().toStdString() << std::endl;
@@ -91,6 +91,8 @@ int main(int argc, char **argv)
         kcm->load();
         kcm->setResetDefaultLayout(parser.isSet(_resetLayout));
         kcm->lookAndFeelSettings()->setLookAndFeelPackage(parser.value(_apply));
+        // Save manually as we aren't in an event loop
+        kcm->lookAndFeelSettings()->save();
         kcm->save();
         delete kcm;
     }

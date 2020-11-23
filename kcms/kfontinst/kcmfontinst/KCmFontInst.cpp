@@ -54,7 +54,6 @@
 #include <KAboutData>
 #include <KToolBar>
 #include <KMessageBox>
-#include <KIO/Job>
 #include <KIO/StatJob>
 #include <KJobWidgets>
 #include <KGuiItem>
@@ -599,10 +598,10 @@ void CKCmFontInst::print(bool all)
                             str << (*it).family << Qt::endl
                                 << (*it).styleInfo << Qt::endl;
 
-                        args << "--embed" << QString().sprintf("0x%x", (unsigned int)window()->winId())
+                        args << "--embed" << QStringLiteral("0x%1").arg((unsigned int)window()->winId(), 0, 16)
                              << "--qwindowtitle" << title
                              << "--qwindowicon" << "preferences-desktop-font-installer"
-                             << "--size" << QString().setNum(constSizes[dlg.chosenSize() < 6 ? dlg.chosenSize() : 2])
+                             << "--size" << QString::number(constSizes[dlg.chosenSize() < 6 ? dlg.chosenSize() : 2])
                              << "--listfile" << tmpFile.fileName()
                              << "--deletefile";
                     }
@@ -614,10 +613,10 @@ void CKCmFontInst::print(bool all)
                 }
                 else
                 {
-                    args << "--embed" << QString().sprintf("0x%x", (unsigned int)window()->winId())
+                    args << "--embed" << QStringLiteral("0x%1").arg((unsigned int)window()->winId(), 0, 16)
                          << "--qwindowtitle" << title
                          << "--qwindowicon" << "preferences-desktop-font-installer"
-                         << "--size" << QString().setNum(constSizes[dlg.chosenSize()<6 ? dlg.chosenSize() : 2]);
+                         << "--size" << QString::number(constSizes[dlg.chosenSize()<6 ? dlg.chosenSize() : 2]);
 
                     for(; it!=end; ++it)
                         args << "--pfont" << QString((*it).family.toUtf8()+','+QString().setNum((*it).styleInfo));
@@ -965,10 +964,10 @@ void CKCmFontInst::setStatusBar()
 
         if(disabled||partial)
         {
-            text+=QString(" (<img src=\"%1\" />%2").arg(KIconLoader::global()->iconPath("dialog-ok", -KIconLoader::SizeSmall)).arg(enabled)
-                 +QString(" <img src=\"%1\" />%2").arg(KIconLoader::global()->iconPath("dialog-cancel", -KIconLoader::SizeSmall)).arg(disabled);
+            text+=QLatin1String(" (<img src=\"%1\" />%2").arg(KIconLoader::global()->iconPath("dialog-ok", -KIconLoader::SizeSmall)).arg(enabled)
+                 +QLatin1String(" <img src=\"%1\" />%2").arg(KIconLoader::global()->iconPath("dialog-cancel", -KIconLoader::SizeSmall)).arg(disabled);
             if(partial)
-                text+=QString(" <img src=\"%1\" />%2").arg(partialIcon()).arg(partial);
+                text+=QLatin1String(" <img src=\"%1\" />%2").arg(partialIcon()).arg(partial);
             text+=QLatin1Char(')');
             itsStatusLabel->setToolTip(partial
                                         ? i18n("<table>"

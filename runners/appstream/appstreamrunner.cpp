@@ -35,8 +35,8 @@
 
 K_EXPORT_PLASMA_RUNNER_WITH_JSON(InstallerRunner, "plasma-runner-appstream.json")
 
-InstallerRunner::InstallerRunner(QObject *parent, const QVariantList &args)
-    : Plasma::AbstractRunner(parent, args)
+InstallerRunner::InstallerRunner(QObject *parent, const KPluginMetaData &metaData, const QVariantList &args)
+    : Plasma::AbstractRunner(parent, metaData, args)
 {
     setObjectName(QStringLiteral("Installation Suggestions"));
     setPriority(AbstractRunner::HighestPriority);
@@ -118,6 +118,7 @@ void InstallerRunner::match(Plasma::RunnerContext &context)
         match.setText(i18n("Get %1...", component.name()));
         match.setSubtext(component.summary());
         match.setData(QUrl("appstream://" + componentId));
+        match.setRelevance(component.name().compare(context.query(), Qt::CaseInsensitive) == 0 ? 1. : 0.7);
         context.addMatch(match);
     }
 }

@@ -26,7 +26,6 @@
 
 #include <QDebug>
 #include <KLocalizedString>
-#include <KService>
 
 #include <Plasma/Applet>
 #include <Plasma/PluginLoader>
@@ -34,8 +33,8 @@
 
 K_EXPORT_PLASMA_RUNNER_WITH_JSON(WindowedWidgetsRunner, "plasma-runner-windowedwidgets.json")
 
-WindowedWidgetsRunner::WindowedWidgetsRunner(QObject *parent, const QVariantList &args)
-    : Plasma::AbstractRunner(parent, args)
+WindowedWidgetsRunner::WindowedWidgetsRunner(QObject *parent, const KPluginMetaData &metaData, const QVariantList &args)
+    : Plasma::AbstractRunner(parent, metaData, args)
 {
     setObjectName(QStringLiteral("WindowedWidgets"));
     setPriority(AbstractRunner::HighestPriority);

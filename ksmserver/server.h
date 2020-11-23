@@ -64,7 +64,11 @@ class KSMClient;
 
 class OrgKdeKWinSessionInterface;
 
-enum SMType { SM_ERROR, SM_WMCOMMAND, SM_WMSAVEYOURSELF };
+enum SMType {
+    SM_ERROR,
+    SM_WMCOMMAND,
+    SM_WMSAVEYOURSELF,
+};
 struct SMData
     {
     SMType type;
@@ -82,7 +86,7 @@ public:
         None = 0,
         OnlyLocal = 1 << 0,
         ImmediateLockScreen = 1 << 1,
-        NoLockScreen = 1 << 2
+        NoLockScreen = 1 << 2,
     };
 
     Q_DECLARE_FLAGS(InitFlags, InitFlag)
@@ -212,7 +216,7 @@ private:
         Idle,
         RestoringWMSession, Restoring,
         Shutdown, Checkpoint, Killing, WaitingForKNotify, // shutdown
-        ClosingSubSession, KillingSubSession, RestoringSubSession
+        ClosingSubSession, KillingSubSession, RestoringSubSession,
         };
     State state;
     bool saveSession;

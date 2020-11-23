@@ -71,17 +71,17 @@ KCM.GridViewKCM {
 
             Connections {
                 target: kcm
-                onShowSuccessMessage: {
+                function onShowSuccessMessage(message) {
                     infoLabel.type = Kirigami.MessageType.Positive;
                     infoLabel.text = message;
                     infoLabel.visible = true;
                 }
-                onShowInfoMessage: {
+                function onShowInfoMessage(message) {
                     infoLabel.type = Kirigami.MessageType.Information;
                     infoLabel.text = message;
                     infoLabel.visible = true;
                 }
-                onShowErrorMessage: {
+                function onShowErrorMessage(message) {
                     infoLabel.type = Kirigami.MessageType.Error;
                     infoLabel.text = message;
                     infoLabel.visible = true;
@@ -132,8 +132,8 @@ KCM.GridViewKCM {
                             Kirigami.Icon {
                                 source: model.decoration
                                 smooth: true
-                                width: sizeComboDelegate.size / Screen.devicePixelRatio
-                                height: sizeComboDelegate.size / Screen.devicePixelRatio
+                                Layout.preferredWidth: sizeComboDelegate.size / Screen.devicePixelRatio
+                                Layout.preferredHeight: sizeComboDelegate.size / Screen.devicePixelRatio
                                 visible: valid && sizeComboDelegate.size > 0
                             }
 

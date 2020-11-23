@@ -59,7 +59,7 @@ inline static std::pair<QUrl, QStringList> deserializeLauncher(const QString &se
         const auto activitiesBlockEnd = serializedLauncher.indexOf("]\n");
 
         if (activitiesBlockEnd != -1) {
-            activities = serializedLauncher.mid(1, activitiesBlockEnd - 1).split(",", QString::SkipEmptyParts);
+            activities = serializedLauncher.mid(1, activitiesBlockEnd - 1).split(",", Qt::SkipEmptyParts);
 
             if (!activities.isEmpty()) {
                 url = QUrl(serializedLauncher.mid(activitiesBlockEnd + 2));

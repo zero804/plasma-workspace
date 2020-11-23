@@ -20,7 +20,6 @@
 
 #include "feedback.h"
 
-#include <KSharedConfig>
 #include <KConfigGroup>
 #include <KPluginFactory>
 #include <KAboutData>
@@ -62,7 +61,7 @@ Feedback::Feedback(QObject *parent, const QVariantList &args)
                                        QStringLiteral("1.0"), i18n("Configure user feedback settings"), KAboutLicense::LGPL));
 
     QVector<QProcess*> processes;
-    for (const auto exec: s_programs.keys()) {
+    for (const auto &exec: s_programs.keys()) {
         QProcess* p = new QProcess(this);
         p->setProgram(exec);
         p->setArguments({QStringLiteral("--feedback")});

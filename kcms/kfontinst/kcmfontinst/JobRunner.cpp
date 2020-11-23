@@ -103,7 +103,7 @@ QUrl CJobRunner::encode(const QString &family, quint32 style, bool system)
 {
     QUrl url(FC::encode(family, style));
 
-    url.addQueryItem("sys", system ? "true" : "false");
+    url.setQuery(QUrlQuery({{QStringLiteral("sys"), system ? QStringLiteral("true") : QStringLiteral("false")}}));
     return url;
 }
 
@@ -113,14 +113,14 @@ enum EPages
     PAGE_SKIP,
     PAGE_ERROR,
     PAGE_CANCEL,
-    PAGE_COMPLETE
+    PAGE_COMPLETE,
 };
 
 enum Response
 {
     RESP_CONTINUE,
     RESP_AUTO,
-    RESP_CANCEL
+    RESP_CANCEL,
 };
 
 static void addIcon(QGridLayout *layout, QFrame *page, const char *iconName, int iconSize)

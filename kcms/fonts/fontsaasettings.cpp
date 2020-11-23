@@ -21,7 +21,6 @@
 #include <QDebug>
 #include <KWindowSystem>
 
-#include "kxftconfig.h"
 
 namespace {
     bool defaultExclude()
@@ -68,7 +67,6 @@ class FontAASettingsStore : public QObject
 public:
     FontAASettingsStore(FontsAASettings *parent = nullptr)
         : QObject(parent)
-        , m_settings(parent)
     {
         load();
     }
@@ -244,7 +242,6 @@ public:
     }
 
 private:
-    FontsAASettings *m_settings;
     bool m_isImmutable;
     bool m_antiAliasing;
     bool m_antiAliasingChanged;

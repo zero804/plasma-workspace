@@ -21,6 +21,7 @@
 import QtQuick 2.8
 import QtQuick.Window 2.2
 import QtQuick.Layouts 1.1
+import QtQml 2.15
 
 import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.components 3.0 as PlasmaComponents3
@@ -41,8 +42,6 @@ ColumnLayout {
 
     property bool hovered
     property QtObject jobDetails
-    // TOOD make an alias on visible if we're not doing an animation
-    property bool showDetails
 
     readonly property int totalFiles: jobItem.jobDetails && jobItem.jobDetails.totalFiles || 0
     readonly property var url: {
@@ -90,6 +89,7 @@ ColumnLayout {
             property: "visible"
             value: true
             when: jobDragIcon.valid
+            restoreMode: Binding.RestoreBinding
         }
 
         DraggableFileArea {
@@ -231,7 +231,7 @@ ColumnLayout {
             PropertyChanges {
                 target: suspendButton
                 tooltip: i18ndc("plasma_applet_org.kde.plasma.notifications", "Resume paused job", "Resume")
-                iconSource: "media-playback-start"
+                checked: true
             }
             PropertyChanges {
                 target: progressBar

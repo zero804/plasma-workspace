@@ -191,7 +191,7 @@ InteractiveConsole::InteractiveConsole(QWidget *parent)
     connect(m_executeAction, &QAction::triggered, this, &InteractiveConsole::evaluateScript);
     m_executeAction->setShortcut(Qt::CTRL + Qt::Key_E);
 
-    const QString autosave = QStandardPaths::writableLocation(QStandardPaths::DataLocation) + "/" + s_autosaveFileName;
+    const QString autosave = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/" + s_autosaveFileName;
     if (QFile::exists(autosave)) {
         loadScript(autosave);
     }
@@ -275,7 +275,7 @@ void InteractiveConsole::loadScript(const QString &script)
 void InteractiveConsole::showEvent(QShowEvent *)
 {
     if (m_editorPart) {
-        m_editorPart->views().first()->setFocus();
+        m_editorPart->views().constFirst()->setFocus();
     } else {
         m_editor->setFocus();
     }
@@ -287,7 +287,7 @@ void InteractiveConsole::showEvent(QShowEvent *)
 void InteractiveConsole::closeEvent(QCloseEvent *event)
 {
     // need to save first!
-    const QString path = QStandardPaths::writableLocation(QStandardPaths::DataLocation) + "/" + s_autosaveFileName;
+    const QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/" + s_autosaveFileName;
     m_closeWhenCompleted = true;
     saveScript(QUrl::fromLocalFile(path));
     QDialog::closeEvent(event);
@@ -336,7 +336,7 @@ void InteractiveConsole::openScriptUrlSelected(int result)
     }
 
     if (result == QDialog::Accepted) {
-        const QUrl url = m_fileDialog->selectedUrls().first();
+        const QUrl url = m_fileDialog->selectedUrls().constFirst();
         if (!url.isEmpty()) {
             loadScriptFromUrl(url);
         }
@@ -377,7 +377,7 @@ void InteractiveConsole::populateTemplatesMenu()
         return left.name() < right.name();
     });
     KPackage::Package package = KPackage::PackageLoader::self()->loadPackage(QStringLiteral("Plasma/LayoutTemplate"));
-    for (const auto &templateMetaData : templates){
+    for (const auto &templateMetaData : qAsConst(templates)){
         package.setPath(templateMetaData.pluginId());
         const QString scriptFile = package.filePath("mainscript");
         if (!scriptFile.isEmpty()) {
@@ -452,7 +452,7 @@ void InteractiveConsole::saveScriptUrlSelected(int result)
     }
 
     if (result == QDialog::Accepted) {
-        const QUrl url = m_fileDialog->selectedUrls().first();
+        const QUrl url = m_fileDialog->selectedUrls().constFirst();
         if (!url.isEmpty()) {
             saveScript(url);
         }
@@ -511,7 +511,7 @@ void InteractiveConsole::reenableEditor(KJob* job)
 void InteractiveConsole::evaluateScript()
 {
     //qDebug() << "evaluating" << m_editor->toPlainText();
-    const QString path = QStandardPaths::writableLocation(QStandardPaths::DataLocation) + "/" + s_autosaveFileName;
+    const QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/" + s_autosaveFileName;
     saveScript(QUrl::fromLocalFile(path));
 
     m_output->moveCursor(QTextCursor::End);
@@ -551,7 +551,7 @@ void InteractiveConsole::evaluateScript()
         if (reply.type() == QDBusMessage::ErrorMessage) {
             print(reply.errorMessage());
         } else {
-            const int id = reply.arguments().first().toInt();
+            const int id = reply.arguments().constFirst().toInt();
             QDBusConnection::sessionBus().connect(s_kwinService, "/" + QString::number(id), QString(), QStringLiteral("print"), this, SLOT(print(QString)));
             QDBusConnection::sessionBus().connect(s_kwinService, "/" + QString::number(id), QString(), QStringLiteral("printError"), this, SLOT(print(QString)));
             message = QDBusMessage::createMethodCall(s_kwinService, "/" + QString::number(id), QString(), QStringLiteral("run"));

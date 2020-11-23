@@ -42,7 +42,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <KCompositeJob>
 #include <Kdelibs4Migration>
 #include <KIO/DesktopExecParser>
-#include <KJob>
 #include <KNotifyConfig>
 #include <KProcess>
 #include <KService>
@@ -151,8 +150,6 @@ class NotificationThread : public QThread
 {
     Q_OBJECT
     void run() override {
-        // Prevent application exit until the thread (and hence the sound) completes
-        QEventLoopLocker(this);
         // We cannot parent to the thread itself so let's create
         // a QObject on the stack and parent everythign to it
         QObject parent;
@@ -197,6 +194,9 @@ class NotificationThread : public QThread
         m->play();
         exec();
     }
+private:
+    // Prevent application exit until the thread (and hence the sound) completes
+    QEventLoopLocker m_locker;
 
 };
 
@@ -262,6 +262,8 @@ Startup::Startup(QObject *parent):
 
     connect(sequence.last(), &KJob::finished, this, &Startup::finishStartup);
     sequence.first()->start();
+
+    // app will be closed when all KJobs finish thanks to the QEventLoopLocker in each KJob
 }
 
 void Startup::upAndRunning( const QString& msg )
@@ -278,7 +280,6 @@ void Startup::finishStartup()
 {
     qCDebug(PLASMA_SESSION) << "Finished";
     upAndRunning(QStringLiteral("ready"));
-    qApp->quit();
 }
 
 void Startup::updateLaunchEnv(const QString &key, const QString &value)

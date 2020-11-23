@@ -5,7 +5,7 @@ set(PROJECT_VERSION "5.20.80")
 set(PROJECT_VERSION_MAJOR 5)
 
 set(QT_MIN_VERSION "5.15.0")
-set(KF5_MIN_VERSION "5.74")
+set(KF5_MIN_VERSION "5.77")
 set(INSTALL_SDDM_THEME TRUE)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -89,6 +89,11 @@ find_package(Phonon4Qt5 4.6.60 REQUIRED NO_MODULE)
 set_package_properties(Phonon4Qt5 PROPERTIES
    DESCRIPTION "Qt-based audio library"
    TYPE REQUIRED)
+
+find_package(Breeze ${PROJECT_VERSION} CONFIG)
+set_package_properties(Breeze PROPERTIES
+                       TYPE OPTIONAL
+                       PURPOSE "For setting the default window decoration plugin")
 
 find_package(ZLIB)
 set_package_properties(ZLIB PROPERTIES DESCRIPTION "Support for gzip compressed files and data streams"

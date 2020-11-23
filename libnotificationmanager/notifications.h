@@ -280,6 +280,7 @@ public:
         ReplyPlaceholderTextRole, ///< A custom placeholder text for the reply action, e.g. "Reply to Max...". @since 5.18
         ReplySubmitButtonTextRole, ///< A custom text for the reply submit button, e.g. "Submit Comment". @since 5.18
         ReplySubmitButtonIconNameRole, ///< A custom icon name for the reply submit button. @since 5.18
+        CategoryRole, ///< The (optional) category of the notification. Notifications can optionally have a type indicator. Although neither client or nor server must support this, some may choose to. Those servers implementing categories may use them to intelligently display the notification in a certain way, or group notifications of similar types.  @since 5.21
     };
     Q_ENUM(Roles)
 
@@ -289,7 +290,7 @@ public:
     enum Type {
         NoType,
         NotificationType, ///< This item represents a notification.
-        JobType ///< This item represents an application job.
+        JobType, ///< This item represents an application job.
     };
     Q_ENUM(Type)
 
@@ -302,7 +303,7 @@ public:
         // these don't match the spec's value
         LowUrgency = 1 << 0, ///< The notification has low urgency, it is not important and may not be shown or added to a history.
         NormalUrgency = 1 << 1, ///< The notification has normal urgency. This is also the default if no urgecny is supplied.
-        CriticalUrgency = 1 << 2
+        CriticalUrgency = 1 << 2,
     };
     Q_ENUM(Urgency)
     Q_DECLARE_FLAGS(Urgencies, Urgency)
@@ -325,7 +326,7 @@ public:
     enum JobState {
         JobStateStopped, ///< The job is stopped. It has either finished (error is 0) or failed (error is not 0)
         JobStateRunning, ///< The job is currently running.
-        JobStateSuspended ///< The job is currentl paused
+        JobStateSuspended, ///< The job is currentl paused
     };
     Q_ENUM(JobState)
 
@@ -335,7 +336,7 @@ public:
     enum SortMode {
         SortByDate = 0, ///< Sort notifications strictly by the date they were updated or created.
         // should this be flags? SortJobsFirst | SortByUrgency | ...?
-        SortByTypeAndUrgency ///< Sort notifications taking into account their type and urgency. The order is (descending): Critical, jobs, Normal, Low.
+        SortByTypeAndUrgency, ///< Sort notifications taking into account their type and urgency. The order is (descending): Critical, jobs, Normal, Low.
     };
     Q_ENUM(SortMode)
 
@@ -345,7 +346,7 @@ public:
     enum GroupMode {
         GroupDisabled = 0,
         //GroupApplicationsTree, // TODO make actual tree
-        GroupApplicationsFlat
+        GroupApplicationsFlat,
     };
     Q_ENUM(GroupMode)
 

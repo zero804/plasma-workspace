@@ -30,40 +30,26 @@ import "items"
 MouseArea {
     id: root
 
-    Layout.minimumWidth: vertical ? PlasmaCore.Units.iconSizes.small : tasksGrid.implicitWidth + (expander.visible ? expander.implicitWidth : 0) + PlasmaCore.Units.smallSpacing
+    readonly property bool vertical: plasmoid.formFactor === PlasmaCore.Types.Vertical
 
-    Layout.minimumHeight: vertical ? tasksGrid.implicitHeight + (expander.visible ? expander.implicitHeight : 0) + PlasmaCore.Units.smallSpacing : PlasmaCore.Units.smallSpacing
+    Layout.minimumWidth: vertical ? PlasmaCore.Units.iconSizes.small : mainLayout.implicitWidth + PlasmaCore.Units.smallSpacing
+    Layout.minimumHeight: vertical ? mainLayout.implicitHeight + PlasmaCore.Units.smallSpacing : PlasmaCore.Units.iconSizes.small
 
-    Layout.preferredHeight: Layout.minimumHeight
     LayoutMirroring.enabled: !vertical && Qt.application.layoutDirection === Qt.RightToLeft
     LayoutMirroring.childrenInherit: true
 
-    // The icon size to display when not using the auto-scaling setting
-    readonly property int smallIconSize: PlasmaCore.Units.iconSizes.smallMedium
-
-    // Used only by AbstractItem, but it's easiest to keep it here since it
-    // uses dimensions from this item to calculate the final value
-    readonly property int itemSize: autoSize ? PlasmaCore.Units.roundToIconSize(Math.min(Math.min(width / rowsOrColumns, height / rowsOrColumns), PlasmaCore.Units.iconSizes.enormous)) : smallIconSize
-
-    // The rest are derived properties; do not modify
-    readonly property bool vertical: plasmoid.formFactor === PlasmaCore.Types.Vertical
-    readonly property bool autoSize: plasmoid.configuration.scaleIconsToFit
-    readonly property int cellThickness: root.vertical ? root.width : root.height
-    readonly property int rowsOrColumns: autoSize ? 1 : Math.max(1, Math.floor(cellThickness / (smallIconSize + PlasmaCore.Units.smallSpacing)))
-    property alias expanded: dialog.visible
-    property Item activeApplet
-    property alias visibleLayout: tasksGrid
-    property alias hiddenLayout: expandedRepresentation.hiddenLayout
-
-    Plasmoid.onExpandedChanged: {
-        if (!plasmoid.expanded) {
-            dialog.visible = plasmoid.expanded;
-        }
-    }
+    readonly property alias systemTrayState: systemTrayState
+    readonly property alias itemSize: tasksGrid.itemSize
+    readonly property alias visibleLayout: tasksGrid
+    readonly property alias hiddenLayout: expandedRepresentation.hiddenLayout
 
     onWheel: {
         // Don't propagate unhandled wheel events
         wheel.accepted = true;
+    }
+
+    SystemTrayState {
+        id: systemTrayState
     }
 
     //being there forces the items to fully load, and they will be reparented in the popup one by one, this item is *never* visible
@@ -72,36 +58,7 @@ MouseArea {
         visible: false
     }
 
-    Connections {
-        target: plasmoid
-        function onUserConfiguringChanged() {
-            if (plasmoid.userConfiguring) {
-                dialog.visible = false
-            }
-        }
-    }
-
     CurrentItemHighLight {
-        property alias activeApplet: root.activeApplet
-        property alias dialogVisible: dialog.visible
-
-        // Not only is an applet active, but also it's an applet from the visible part of the tray, not the hidden part.
-        readonly property bool visibleAppletActivated: activeApplet && activeApplet.parent && activeApplet.parent.inVisibleLayout
-
-        onActiveAppletChanged: {
-            if (activeApplet && activeApplet.parent.inVisibleLayout) {
-                changeHighlightedItem(activeApplet.parent);
-            } else if (dialog.visible) {
-                changeHighlightedItem(root);
-            }
-        }
-
-        onDialogVisibleChanged: {
-            if (dialogVisible && !activeApplet) {
-                changeHighlightedItemNoAnimation(root);
-            }
-        }
-
         location: plasmoid.location
     }
 
@@ -157,22 +114,51 @@ MouseArea {
 
         GridView {
             id: tasksGrid
-            readonly property int smallSizeCellLength: root.cellThickness >= root.smallIconSize ? root.smallIconSize + PlasmaCore.Units.smallSpacing * 2
-                                                                                               : root.smallIconSize
-            readonly property int autoSizeCellLength: root.cellThickness / root.rowsOrColumns
-            readonly property int totalLength: root.vertical ? cellHeight * Math.round(count / root.rowsOrColumns)
-                                                             : cellWidth * Math.round(count / root.rowsOrColumns)
 
             Layout.alignment: Qt.AlignCenter
 
             interactive: false //disable features we don't need
             flow: vertical ? GridView.LeftToRight : GridView.TopToBottom
 
-            implicitHeight: root.vertical ? totalLength : root.height
-            implicitWidth: !root.vertical ? totalLength : root.width
+            // The icon size to display when not using the auto-scaling setting
+            readonly property int smallIconSize: PlasmaCore.Units.iconSizes.smallMedium
+            readonly property bool autoSize: plasmoid.configuration.scaleIconsToFit
 
-            cellHeight: root.vertical && !root.autoSize ? smallSizeCellLength : autoSizeCellLength
-            cellWidth:  !root.vertical && !root.autoSize ? smallSizeCellLength : autoSizeCellLength
+            readonly property int gridThickness: root.vertical ? root.width : root.height
+            // Should change to 2 rows/columns on a 56px panel (in standard DPI)
+            readonly property int rowsOrColumns: autoSize ? 1 : Math.max(1, Math.min(count, Math.floor(gridThickness / (smallIconSize + PlasmaCore.Units.smallSpacing))))
+
+            // Add margins only if the panel is larger than a small icon (to avoid large gaps between tiny icons)
+            readonly property int smallSizeCellLength: gridThickness < smallIconSize ? smallIconSize : smallIconSize + PlasmaCore.Units.smallSpacing * 2
+            cellHeight: {
+                if (root.vertical) {
+                    return autoSize ? root.width : smallSizeCellLength
+                } else {
+                    return autoSize ? root.height : Math.floor(root.height / rowsOrColumns)
+                }
+            }
+            cellWidth: {
+                if (root.vertical) {
+                    return autoSize ? root.width : Math.floor(root.width / rowsOrColumns)
+                } else {
+                    return autoSize ? root.height : smallSizeCellLength
+                }
+            }
+
+            //depending on the form factor, we are calculating only one dimention, second is always the same as root/parent
+            implicitHeight: root.vertical ? cellHeight * Math.ceil(count / rowsOrColumns) : root.height
+            implicitWidth: !root.vertical ? cellWidth * Math.ceil(count / rowsOrColumns) : root.width
+
+            // Used only by AbstractItem, but it's easiest to keep it here since it
+            // uses dimensions from this item to calculate the final value
+            readonly property int itemSize: {
+                if (autoSize) {
+                    const size = Math.min(implicitWidth / rowsOrColumns, implicitHeight / rowsOrColumns)
+                    return PlasmaCore.Units.roundToIconSize(Math.min(size, PlasmaCore.Units.iconSizes.enormous))
+                } else {
+                    return smallIconSize
+                }
+            }
 
             model: PlasmaCore.SortFilterModel {
                 sourceModel: plasmoid.nativeInterface.systemTrayModel
@@ -185,7 +171,7 @@ MouseArea {
             delegate: ItemLoader {}
 
             add: Transition {
-                enabled: root.itemSize > 0
+                enabled: itemSize > 0
 
                 NumberAnimation {
                     property: "scale"
@@ -220,6 +206,7 @@ MouseArea {
             id: expander
             Layout.fillWidth: vertical
             Layout.fillHeight: !vertical
+            visible: root.hiddenLayout.itemCount > 0
         }
     }
 
@@ -230,26 +217,17 @@ MouseArea {
         flags: Qt.WindowStaysOnTopHint
         location: plasmoid.location
         hideOnWindowDeactivate: !plasmoid.configuration.pin
+        visible: systemTrayState.expanded
 
         onVisibleChanged: {
-            if (!visible) {
-                plasmoid.status = PlasmaCore.Types.PassiveStatus;
-                if (root.activeApplet) {
-                    root.activeApplet.expanded = false;
-                }
-            } else {
-                plasmoid.status = PlasmaCore.Types.RequiresAttentionStatus;
-            }
-            plasmoid.expanded = visible;
+            systemTrayState.expanded = visible
         }
         mainItem: ExpandedRepresentation {
             id: expandedRepresentation
 
             Keys.onEscapePressed: {
-                root.expanded = false;
+                systemTrayState.expanded = false
             }
-
-            activeApplet: root.activeApplet
 
             LayoutMirroring.enabled: Qt.application.layoutDirection === Qt.RightToLeft
             LayoutMirroring.childrenInherit: true

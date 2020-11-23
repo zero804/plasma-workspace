@@ -35,7 +35,6 @@
 #include <KSharedConfig>
 
 #include <algorithm>
-#include <memory>
 
 ThemesModel::ThemesModel(QObject *parent) : QAbstractListModel(parent)
 {
@@ -111,7 +110,7 @@ QHash<int, QByteArray> ThemesModel::roleNames() const
         {DescriptionRole, QByteArrayLiteral("description")},
         {ColorTypeRole, QByteArrayLiteral("colorType")},
         {IsLocalRole, QByteArrayLiteral("isLocal")},
-        {PendingDeletionRole, QByteArrayLiteral("pendingDeletion")}
+        {PendingDeletionRole, QByteArrayLiteral("pendingDeletion")},
     };
 }
 

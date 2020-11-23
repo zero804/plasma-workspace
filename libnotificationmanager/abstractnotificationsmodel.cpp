@@ -22,12 +22,9 @@
 #include "abstractnotificationsmodel_p.h"
 #include "debug.h"
 
-#include "server.h"
 #include "utils_p.h"
 
-#include "notifications.h"
 
-#include "notification.h"
 #include "notification_p.h"
 
 #include <QDebug>
@@ -251,6 +248,8 @@ QVariant AbstractNotificationsModel::data(const QModelIndex &index, int role) co
     case Notifications::ClosableRole: return true;
     case Notifications::ConfigurableRole: return notification.configurable();
     case Notifications::ConfigureActionLabelRole: return notification.configureActionLabel();
+
+    case Notifications::CategoryRole: return notification.category();
 
     case Notifications::ExpiredRole: return notification.expired();
     case Notifications::ReadRole: return notification.read();

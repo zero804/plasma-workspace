@@ -67,7 +67,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QDBusConnection>
-#include <QDBusMessage>
 #include <QSocketNotifier>
 #include <QStandardPaths>
 #include <QDebug>
@@ -591,7 +590,7 @@ extern "C" int _IceTransNoListen(const char * protocol);
 #endif
 
 KSMServer::KSMServer(InitFlags flags)
-  : sessionGroup( QStringLiteral( "" ) )
+  : sessionGroup(QLatin1String(""))
   , m_kwinInterface(new OrgKdeKWinSessionInterface(QStringLiteral("org.kde.KWin"), QStringLiteral("/Session"), QDBusConnection::sessionBus(), this))
   , sockets{ -1, -1 }
 {
@@ -655,9 +654,9 @@ KSMServer::KSMServer(InitFlags flags)
         display.remove(QRegularExpression(QStringLiteral("\\.[0-9]+$")));
         int i;
         while( (i = display.indexOf(QLatin1Char(':'))) >= 0)
-           display[i] = '_';
+           display[i] = QLatin1Char('_');
         while( (i = display.indexOf(QLatin1Char('/'))) >= 0)
-           display[i] = '_';
+           display[i] = QLatin1Char('_');
 
         fName += '_'+display.toLocal8Bit();
         FILE *f;
@@ -739,9 +738,9 @@ void KSMServer::cleanUp()
     display.remove(QRegularExpression(QStringLiteral("\\.[0-9]+$")));
     int i;
     while( (i = display.indexOf(QLatin1Char(':'))) >= 0)
-         display[i] = '_';
+         display[i] = QLatin1Char('_');
     while( (i = display.indexOf(QLatin1Char('/'))) >= 0)
-         display[i] = '_';
+         display[i] = QLatin1Char('_');
 
     fName += '_'+display.toLocal8Bit();
     ::unlink(fName.data());
@@ -848,7 +847,7 @@ QString KSMServer::currentSession()
 {
     if ( sessionGroup.startsWith( QLatin1String( "Session: " ) ) )
         return sessionGroup.mid( 9 );
-    return QStringLiteral( "" ); // empty, not null, since used for KConfig::setGroup // TODO does this comment make any sense?
+    return QLatin1String(""); // empty, not null, since used for KConfig::setGroup // TODO does this comment make any sense?
 }
 
 void KSMServer::discardSession()

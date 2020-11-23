@@ -22,7 +22,6 @@
  */
 
 #include "GroupList.h"
-#include "FontList.h"
 #include <KIconLoader>
 #include <KMessageBox>
 #include <QSaveFile>
@@ -58,7 +57,7 @@ enum EGroupColumns
 {
     COL_GROUP_NAME,
 
-    NUM_GROUP_COLS
+    NUM_GROUP_COLS,
 };
 
 CGroupListItem::CGroupListItem(const QString &name)

@@ -78,7 +78,9 @@ RowLayout {
     Connections {
         target: Globals
         // clock time changed
-        onTimeChanged: notificationHeading.updateAgoText()
+        function onTimeChanged() {
+            notificationHeading.updateAgoText()
+        }
     }
 
     PlasmaCore.IconItem {
@@ -225,7 +227,7 @@ RowLayout {
             Charts.PieChart {
                 id: chart
                 anchors.fill: parent
-                anchors.margins: units.smallSpacing + Math.floor(units.devicePixelRatio)
+                anchors.margins: units.smallSpacing + Math.max(Math.floor(units.devicePixelRatio), 1)
 
                 opacity: (notificationHeading.remainingTime > 0 && notificationHeading.remainingTime < notificationHeading.timeout) ? 1 : 0
                 Behavior on opacity {
@@ -237,7 +239,7 @@ RowLayout {
                 valueSources: Charts.SingleValueSource { value: notificationHeading.remainingTime }
                 colorSource: Charts.SingleValueSource { value: theme.highlightColor }
 
-                thickness: Math.floor(units.devicePixelRatio) * 5
+                thickness: Math.max(Math.floor(units.devicePixelRatio), 1) * 5
 
                 transform: Scale { origin.x: chart.width / 2; xScale: -1 }
             }

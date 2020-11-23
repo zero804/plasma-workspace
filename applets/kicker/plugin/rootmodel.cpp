@@ -72,6 +72,7 @@ RootModel::RootModel(QObject *parent) : AppsModel(QString(), parent)
 , m_showRecentContacts(false)
 , m_recentOrdering(RecentUsageModel::Recent)
 , m_showPowerSession(true)
+, m_showFavoritesPlaceholder(false)
 , m_recentAppsModel(nullptr)
 , m_recentDocsModel(nullptr)
 , m_recentContactsModel(nullptr)
@@ -256,6 +257,22 @@ void RootModel::setShowPowerSession(bool show)
     }
 }
 
+bool RootModel::showFavoritesPlaceholder() const
+{
+    return m_showFavoritesPlaceholder;
+}
+
+void RootModel::setShowFavoritesPlaceholder(bool show)
+{
+    if (show != m_showFavoritesPlaceholder) {
+        m_showFavoritesPlaceholder = show;
+
+        refresh();
+
+        emit showFavoritesPlaceholderChanged();
+    }
+}
+
 AbstractModel* RootModel::favoritesModel()
 {
     return m_favorites;
@@ -394,13 +411,28 @@ void RootModel::refresh()
     int separatorPosition = 0;
 
     if (allModel) {
-        m_entryList.prepend(new GroupEntry(this, i18n("All Applications"), QString("applications-all"), allModel));
+        m_entryList.prepend(new GroupEntry(this, i18n("All Applications"), QStringLiteral("applications-all"), allModel));
+        ++separatorPosition;
+    }
+
+    if (m_showFavoritesPlaceholder) {
+        //This entry is a placeholder and shouldn't ever be visible
+        QList<AbstractEntry *> placeholderList;
+        AppsModel *placeholderModel = new AppsModel(placeholderList, false, this);
+
+        //Favorites group containing a placeholder entry, so it would be considered as a group, not an entry
+        QList<AbstractEntry *> placeholderEntry;
+        placeholderEntry.append(new GroupEntry(this, i18n("This shouldn't be visible! Use KICKER_FAVORITES_MODEL"), QStringLiteral("dialog-warning"), placeholderModel));
+        AppsModel *favoritesPlaceholderModel = new AppsModel(placeholderEntry, false, this);
+
+        favoritesPlaceholderModel->setDescription(QStringLiteral("KICKER_FAVORITES_MODEL")); // Intentionally no i18n.
+        m_entryList.prepend(new GroupEntry(this, i18n("Favorites"), QStringLiteral("bookmarks"), favoritesPlaceholderModel));
         ++separatorPosition;
     }
 
     if (m_showRecentContacts) {
         m_recentContactsModel = new RecentContactsModel(this);
-        m_entryList.prepend(new GroupEntry(this, i18n("Recent Contacts"), QString("view-history"), m_recentContactsModel));
+        m_entryList.prepend(new GroupEntry(this, i18n("Recent Contacts"), QStringLiteral("view-history"), m_recentContactsModel));
         ++separatorPosition;
     }
 
@@ -411,8 +443,8 @@ void RootModel::refresh()
                         ? i18n("Recent Files")
                         : i18n("Often Used Files"),
                     m_recentOrdering == RecentUsageModel::Recent
-                        ? QString("view-history")
-                        : QString("office-chart-pie"),
+                        ? QStringLiteral("view-history")
+                        : QStringLiteral("office-chart-pie"),
                     m_recentDocsModel));
         ++separatorPosition;
     }
@@ -424,8 +456,8 @@ void RootModel::refresh()
                         ? i18n("Recent Applications")
                         : i18n("Often Used Applications"),
                     m_recentOrdering == RecentUsageModel::Recent
-                        ? QString("view-history")
-                        : QString("office-chart-pie"),
+                        ? QStringLiteral("view-history")
+                        : QStringLiteral("office-chart-pie"),
                     m_recentAppsModel));
         ++separatorPosition;
     }
@@ -438,7 +470,7 @@ void RootModel::refresh()
     m_systemModel = new SystemModel(this);
 
     if (m_showPowerSession) {
-        m_entryList << new GroupEntry(this, i18n("Power / Session"), QString("system-log-out"), m_systemModel);
+        m_entryList << new GroupEntry(this, i18n("Power / Session"), QStringLiteral("system-log-out"), m_systemModel);
     }
 
     endResetModel();

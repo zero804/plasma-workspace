@@ -48,6 +48,7 @@ SystemTray::SystemTray(QObject *parent, const QVariantList &args) :
 {
     setHasConfigurationInterface(true);
     setContainmentType(Plasma::Types::CustomEmbeddedContainment);
+    setContainmentDisplayHints(Plasma::Types::ContainmentDrawsPlasmoidHeading | Plasma::Types::ContainmentForcesSquarePlasmoids);
 }
 
 SystemTray::~SystemTray()
@@ -64,6 +65,12 @@ void SystemTray::init()
     m_plasmoidRegistry = new PlasmoidRegistry(m_settings, this);
     connect(m_plasmoidRegistry, &PlasmoidRegistry::plasmoidEnabled, this, &SystemTray::startApplet);
     connect(m_plasmoidRegistry, &PlasmoidRegistry::plasmoidStopped, this, &SystemTray::stopApplet);
+
+    //we don't want to automatically propagate the activated signal from the Applet to the Containment
+    //even if SystemTray is of type Containment, it is de facto Applet and should act like one
+    connect(this, &Containment::appletAdded, this, [this](Plasma::Applet *applet) {
+        disconnect(applet, &Applet::activated, this, &Applet::activated);
+    });
 }
 
 void SystemTray::restoreContents(KConfigGroup &group)
@@ -71,6 +78,12 @@ void SystemTray::restoreContents(KConfigGroup &group)
     if (!isContainment()) {
         qCWarning(SYSTEM_TRAY) << "Loaded as an applet, this shouldn't have happened";
         return;
+    }
+
+    KConfigGroup shortcutConfig(&group, "Shortcuts");
+    QString shortcutText = shortcutConfig.readEntryUntranslated("global", QString());
+    if (!shortcutText.isEmpty()) {
+        setGlobalShortcut(QKeySequence(shortcutText));
     }
 
     //cache known config group ids for applets
@@ -176,7 +189,7 @@ void SystemTray::showStatusNotifierContextMenu(KJob *job, QQuickItem *statusNoti
 
     QMenu *menu = qobject_cast<QMenu *>(sjob->result().value<QObject *>());
 
-    if (menu) {
+    if (menu && !menu->isEmpty()) {
         menu->adjustSize();
         const auto parameters = sjob->parameters();
         int x = parameters[QStringLiteral("x")].toInt();
