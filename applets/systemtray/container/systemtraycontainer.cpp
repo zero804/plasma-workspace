@@ -117,6 +117,14 @@ void SystemTrayContainer::ensureSystrayExists()
 
     //replace internal remove action with ours
     m_innerContainment->actions()->addAction("remove", actions()->action("remove"));
+
+    //Sync the display hints
+    m_innerContainment->setContainmentDisplayHints(containmentDisplayHints() | Plasma::Types::ContainmentDrawsPlasmoidHeading | Plasma::Types::ContainmentForcesSquarePlasmoids);
+    connect(m_innerContainment, &Plasma::Containment::containmentDisplayHintsChanged, this,
+        [this]() {
+            m_innerContainment->setContainmentDisplayHints(containmentDisplayHints() | Plasma::Types::ContainmentDrawsPlasmoidHeading | Plasma::Types::ContainmentForcesSquarePlasmoids);
+        }
+    );
 }
 
 void SystemTrayContainer::constraintsEvent(Plasma::Types::Constraints constraints)
