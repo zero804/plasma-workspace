@@ -24,7 +24,6 @@
 #include <QStandardPaths>
 #include <QProcess>
 
-#include <KPluginLoader>
 #include <KPluginFactory>
 #include <KLocalizedString>
 
@@ -53,7 +52,7 @@ void KDEDKSysGuard::init()
     action->setText(i18n("Show System Activity"));
     connect(action, &QAction::triggered, this, &KDEDKSysGuard::showTaskManager);
 
-    KGlobalAccel::self()->setGlobalShortcut(action, QKeySequence(Qt::CTRL + Qt::Key_Escape));
+    KGlobalAccel::self()->setGlobalShortcut(action, QKeySequence(Qt::CTRL | Qt::Key_Escape));
 }
 
 void KDEDKSysGuard::showTaskManager()

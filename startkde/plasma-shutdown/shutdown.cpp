@@ -9,6 +9,7 @@
 
 #include "sessionmanagementbackend.h"
 #include "ksmserver_interface.h"
+#include "kwin_interface.h"
 #include "debug.h"
 
 
@@ -42,6 +43,8 @@ void Shutdown::startLogout(KWorkSpace::ShutdownType shutdownType)
     m_shutdownType = shutdownType;
 
     OrgKdeKSMServerInterfaceInterface ksmserverIface(QStringLiteral("org.kde.ksmserver"), QStringLiteral("/KSMServer"), QDBusConnection::sessionBus());
+    ksmserverIface.setTimeout(INT32_MAX); // KSMServer closeSession can take a long time to reply, as apps may have prompts.  Value corresponds to DBUS_TIMEOUT_INFINITE
+
     auto closeSessionReply = ksmserverIface.closeSession();
     auto watcher = new QDBusPendingCallWatcher(closeSessionReply, this);
     connect(watcher, &QDBusPendingCallWatcher::finished, this, [closeSessionReply, watcher, this]() {
@@ -66,6 +69,12 @@ void Shutdown::logoutCancelled()
 
 void Shutdown::logoutComplete() {
     runShutdownScripts();
+
+    // technically this isn't needed in the systemd managed mode, but it seems harmless for now. Guard if it becomes an issue
+    OrgKdeKWinSessionInterface kwinInterface(QStringLiteral("org.kde.KWin"), QStringLiteral("/Session"), QDBusConnection::sessionBus());
+    QDBusPendingReply<> reply = kwinInterface.quit();
+    reply.waitForFinished();
+
     if (m_shutdownType == KWorkSpace::ShutdownTypeHalt) {
             SessionBackend::self()->shutdown();
     } else if (m_shutdownType == KWorkSpace::ShutdownTypeReboot) {

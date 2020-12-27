@@ -1,32 +1,27 @@
 /*
- * Copyright (C) 2014  Daniel Vratil <dvratil@redhat.com>
- * Copyright (C) 2019  David Edmundson <davidedmundson@kde.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- *
+ * SPDX-FileCopyrightText: 2014 Daniel Vrátil <dvratil@redhat.com>
+ * SPDX-FileCopyrightText: 2019 David Edmundson <davidedmundson@kde.org>
+ * SPDX-FileCopyrightText: 2020 Andrey Butirsky <butirsky@gmail.com>
+ * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
 #include "keyboardlayout.h"
+#include "keyboard_layout_interface.h"
 
 #include <QDBusInterface>
-#include <QDBusReply>
 
-#include <QDebug>
-#include "debug.h"
+template<>
+void KeyboardLayout::requestDBusData<KeyboardLayout::LayoutDisplayName>()
+{ if (mIface) requestDBusData(mIface->getLayoutDisplayName(), mLayoutDisplayName, &KeyboardLayout::layoutDisplayNameChanged); }
 
-#include "keyboard_layout_interface.h"
+template<>
+void KeyboardLayout::requestDBusData<KeyboardLayout::LayoutLongName>()
+{ if (mIface) requestDBusData(mIface->getLayoutLongName(), mLayoutLongName, &KeyboardLayout::layoutLongNameChanged); }
+
+template<>
+void KeyboardLayout::requestDBusData<KeyboardLayout::Layouts>()
+{ if (mIface) requestDBusData(mIface->getLayoutsList(), mLayouts, &KeyboardLayout::layoutsChanged); }
+
 
 KeyboardLayout::KeyboardLayout(QObject* parent)
     : QObject(parent)
@@ -42,131 +37,52 @@ KeyboardLayout::KeyboardLayout(QObject* parent)
           return;
     }
 
-    connect(mIface, &OrgKdeKeyboardLayoutsInterface::currentLayoutChanged,
-            this, &KeyboardLayout::onCurrentLayoutChanged);
+    connect(mIface, &OrgKdeKeyboardLayoutsInterface::layoutChanged,
+            this, [this]()
+                    {
+                        requestDBusData<LayoutDisplayName>();
+                        requestDBusData<LayoutLongName>();
+                    });
     connect(mIface, &OrgKdeKeyboardLayoutsInterface::layoutListChanged,
-            this, &KeyboardLayout::requestLayoutsList);
+            this, [this]()
+                    {
+                        requestDBusData<LayoutDisplayName>();
+                        requestDBusData<LayoutLongName>();
+                        requestDBusData<Layouts>();
+                    });
 
-    requestCurrentLayout();
-    requestLayoutsList();
-
+    emit mIface->OrgKdeKeyboardLayoutsInterface::layoutListChanged();
 }
 
 KeyboardLayout::~KeyboardLayout()
 {
 }
 
-void KeyboardLayout::requestCurrentLayout()
+void KeyboardLayout::switchToNextLayout()
 {
-    if (!mIface) {
-        return;
-    }
-
-    QDBusPendingReply<QString> pendingLayout = mIface->getCurrentLayout();
-    QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pendingLayout, this);
-    connect(watcher, &QDBusPendingCallWatcher::finished,
-            this, &KeyboardLayout::onCurrentLayoutReceived);
+    if (mIface) mIface->switchToNextLayout();
 }
 
-void KeyboardLayout::onCurrentLayoutReceived(QDBusPendingCallWatcher *watcher)
+void KeyboardLayout::switchToPreviousLayout()
 {
-    QDBusPendingReply<QString> reply = *watcher;
-    if (reply.isError()) {
-        qCWarning(KEYBOARD_LAYOUT) << reply.error().message();
-    } else {
-        mCurrentLayout = reply.value();
-        requestCurrentLayoutDisplayName();
-        Q_EMIT currentLayoutChanged(mCurrentLayout);
-    }
-    watcher->deleteLater();
+    if (mIface) mIface->switchToPreviousLayout();
 }
 
-void KeyboardLayout::requestCurrentLayoutDisplayName()
+template<class T>
+void KeyboardLayout::requestDBusData(QDBusPendingReply<T> pendingReply, T &out, void (KeyboardLayout::*notify)())
 {
-    QDBusPendingReply<QString> pendingDisplayName = mIface->getLayoutDisplayName(mCurrentLayout);
-    QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pendingDisplayName, this);
-    connect(watcher, &QDBusPendingCallWatcher::finished, this, &KeyboardLayout::onCurrentLayoutDisplayNameReceived);
+    const QDBusPendingCallWatcher * const watcher = new QDBusPendingCallWatcher(pendingReply, this);
+    connect(watcher, &QDBusPendingCallWatcher::finished, this,
+        [this, &out, notify](QDBusPendingCallWatcher *watcher)
+        {
+            QDBusPendingReply<T> reply = *watcher;
+            if (reply.isError()) {
+                qCWarning(KEYBOARD_LAYOUT) << reply.error().message();
+            } else {
+                out = reply.value();
+                emit (this->*notify)();
+            }
+            watcher->deleteLater();
+        }
+    );
 }
-
-void KeyboardLayout::onCurrentLayoutDisplayNameReceived(QDBusPendingCallWatcher *watcher)
-{
-    QDBusPendingReply<QString> reply = *watcher;
-    if (reply.isError()) {
-        qCWarning(KEYBOARD_LAYOUT) << reply.error().message();
-    } else {
-        mCurrentLayoutDisplayName = reply.value();
-        Q_EMIT currentLayoutDisplayNameChanged(mCurrentLayoutDisplayName);
-    }
-    watcher->deleteLater();
-}
-
-QString KeyboardLayout::currentLayoutDisplayName() const
-{
-    return mCurrentLayoutDisplayName;
-}
-
-void KeyboardLayout::requestLayoutsList()
-{
-    if (!mIface) {
-        return;
-    }
-
-    QDBusPendingReply<QStringList> pendingLayout = mIface->getLayoutsList();
-    QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pendingLayout, this);
-    connect(watcher, &QDBusPendingCallWatcher::finished,
-            this, &KeyboardLayout::onLayoutsListReceived);
-}
-
-
-void KeyboardLayout::onLayoutsListReceived(QDBusPendingCallWatcher *watcher)
-{
-    QDBusPendingReply<QStringList> reply = *watcher;
-    if (reply.isError()) {
-        qCWarning(KEYBOARD_LAYOUT) << reply.error().message();
-    } else {
-        mLayouts = reply.value();
-        qCDebug(KEYBOARD_LAYOUT) << "Layouts list changed: " << mLayouts;
-        Q_EMIT layoutsChanged();
-    }
-    watcher->deleteLater();
-}
-
-QString KeyboardLayout::currentLayout() const
-{
-    return mCurrentLayout;
-}
-
-bool KeyboardLayout::onCurrentLayoutChanged(const QString &layout)
-{
-    if (!mIface) {
-        return false;
-    }
-    if (mCurrentLayout == layout) {
-        return false;
-    }
-
-    if (!mLayouts.contains(layout)) {
-        qCWarning(KEYBOARD_LAYOUT) << "No such layout" << layout;
-        return false;
-    }
-
-    mCurrentLayout = layout;
-    requestCurrentLayoutDisplayName();
-    Q_EMIT currentLayoutChanged(layout);
-
-    return true;
-}
-
-void KeyboardLayout::setCurrentLayout(const QString &layout)
-{
-    if (onCurrentLayoutChanged(layout)) {
-        mIface->setLayout(layout);
-    }
-}
-
-
-QStringList KeyboardLayout::layouts() const
-{
-    return mLayouts;
-}
-

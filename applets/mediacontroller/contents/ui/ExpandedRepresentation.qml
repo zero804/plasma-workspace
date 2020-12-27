@@ -29,13 +29,15 @@ import org.kde.kcoreaddons 1.0 as KCoreAddons
 import org.kde.kirigami 2.4 as Kirigami
 import QtGraphicalEffects 1.0
 
-PlasmaComponents3.Page {
+PlasmaExtras.Representation {
     id: expandedRepresentation
 
     Layout.minimumWidth: PlasmaCore.Units.gridUnit * 14
     Layout.minimumHeight: PlasmaCore.Units.gridUnit * 14
     Layout.preferredWidth: Layout.minimumWidth * 1.5
     Layout.preferredHeight: Layout.minimumHeight * 1.5
+
+    collapseMarginsHint: true
 
     readonly property int controlSize: PlasmaCore.Units.iconSizes.medium
 
@@ -509,27 +511,13 @@ PlasmaComponents3.Page {
     header: PlasmaExtras.PlasmoidHeading {
         id: headerItem
         location: PlasmaExtras.PlasmoidHeading.Location.Header
-        visible: playerList.model.length > 1
+        visible: playerList.model.length > 2 // more than one player, @multiplex is always there
         //this removes top padding to allow tabbar to touch the edge
         topPadding: topInset
         bottomPadding: -bottomInset
         implicitHeight: PlasmaCore.Units.gridUnit * 2
-        PlasmaExtras.Heading { // Song Title
-            anchors.fill: parent
-            anchors.leftMargin: PlasmaCore.Units.smallSpacing
-            level: 2
-
-            textFormat: Text.PlainText
-            fontSizeMode: Text.VerticalFit
-            elide: Text.ElideRight
-
-            text: root.identity
-
-            visible: playerList.count <= 2
-        }
         PlasmaComponents3.TabBar {
             id: playerSelector
-            visible: playerList.model.length > 2 // more than one player, @multiplex is always there
             position: PlasmaComponents3.TabBar.Header
 
             anchors.fill: parent

@@ -23,10 +23,11 @@
 #include <QDir>
 #include <QMimeData>
 
-#include <KRun>
 #include <KLocalizedString>
 #include <KIO/OpenFileManagerWindowJob>
+#include <KIO/OpenUrlJob>
 #include <KIO/Job>
+#include <KNotificationJobUiDelegate>
 #include <KShell>
 
 #include <KActivities/Stats/ResultModel>
@@ -59,6 +60,7 @@ void RecentDocuments::match(Plasma::RunnerContext &context)
         return;
     }
 
+    // clang-format off
     const QString term = context.query();
     auto query = UsedResources
             | Activity::current()
@@ -67,6 +69,7 @@ void RecentDocuments::match(Plasma::RunnerContext &context)
             // we search only on file name, as KActivity does not support better options
             | Url("/*/" + term + "*")
             | Limit(20);
+    // clang-format on
 
     const auto result = new ResultModel(query);
 
@@ -116,8 +119,10 @@ void RecentDocuments::run(const Plasma::RunnerContext &context, const Plasma::Qu
         return;
     }
 
-    auto run = new KRun(url, nullptr);
-    run->setRunExecutables(false);
+    auto *job = new KIO::OpenUrlJob(url);
+    job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoErrorHandlingEnabled));
+    job->setRunExecutables(false);
+    job->start();
 }
 
 QMimeData * RecentDocuments::mimeDataForMatch(const Plasma::QueryMatch& match)

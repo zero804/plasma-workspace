@@ -57,7 +57,7 @@ public:
     ~Private();
 
     QVector<WId> windows;
-    QSet<WId> transients;
+    QMultiHash<WId, WId> transients;
     QMultiHash<WId, WId> transientsDemandingAttention;
     QHash<WId, KWindowInfo*> windowInfoCache;
     QHash<WId, AppData> appDataCache;
@@ -233,8 +233,8 @@ void XWindowTasksModel::Private::addWindow(WId window)
 
     // Handle transient.
     if (leader > 0 && leader != window && leader != QX11Info::appRootWindow()
-        && !transients.contains(window) && windows.contains(leader)) {
-        transients.insert(window);
+        && !transients.values().contains(window) && windows.contains(leader)) {
+        transients.insert(leader, window);
 
         // Update demands attention state for leader.
         if (info.hasState(NET::DemandsAttention) && windows.contains(leader)) {
@@ -274,8 +274,10 @@ void XWindowTasksModel::Private::removeWindow(WId window)
         q->endRemoveRows();
     } else { // Could be a transient.
         // Removing a transient might change the demands attention state of the leader.
-        if (transients.remove(window)) {
-            const WId leader = transientsDemandingAttention.key(window, XCB_WINDOW_NONE);
+        WId leader = transients.key(window, XCB_WINDOW_NONE);
+        if (leader != XCB_WINDOW_NONE) {
+            transients.remove(leader, window);
+            leader = transientsDemandingAttention.key(window, XCB_WINDOW_NONE);
 
             if (leader != XCB_WINDOW_NONE) {
                 transientsDemandingAttention.remove(leader, window);
@@ -643,7 +645,15 @@ QVariant XWindowTasksModel::data(const QModelIndex &index, int role) const
     } else if (role == IsWindow) {
         return true;
     } else if (role == IsActive) {
-        return (window == d->activeWindow);
+        if (window == d->activeWindow) {
+            return true;
+        }
+        for (const WId transient : d->transients.values(window)) {
+            if (transient == d->activeWindow) {
+                return true;
+            }
+        }
+        return false;
     } else if (role == IsClosable) {
         return d->windowInfo(window)->actionSupported(NET::ActionClose);
     } else if (role == IsMovable) {

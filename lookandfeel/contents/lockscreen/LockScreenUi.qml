@@ -24,6 +24,7 @@ import QtGraphicalEffects 1.0
 
 import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.components 3.0 as PlasmaComponents3
+import org.kde.plasma.workspace.components 2.0 as PW
 
 import org.kde.plasma.private.sessions 2.0
 import "../components"
@@ -339,7 +340,6 @@ PlasmaCore.ColorScope {
                     PropertyChanges {
                         target: inputPanel
                         y: lockScreenRoot.height - inputPanel.height
-                        opacity: 1
                     }
                 },
                 State {
@@ -351,7 +351,6 @@ PlasmaCore.ColorScope {
                     PropertyChanges {
                         target: inputPanel
                         y: lockScreenRoot.height - lockScreenRoot.height/4
-                        opacity: 0
                     }
                 }
             ]
@@ -376,11 +375,6 @@ PlasmaCore.ColorScope {
                             NumberAnimation {
                                 target: inputPanel
                                 property: "y"
-                                duration: units.longDuration
-                                easing.type: Easing.OutQuad
-                            }
-                            OpacityAnimator {
-                                target: inputPanel
                                 duration: units.longDuration
                                 easing.type: Easing.OutQuad
                             }
@@ -517,7 +511,7 @@ PlasmaCore.ColorScope {
                 visible: inputPanel.status == Loader.Ready
             }
 
-            KeyboardLayoutButton {
+            PW.KeyboardLayoutButton {
             }
 
             Item {

@@ -46,7 +46,6 @@ PlasmaAppletItem::PlasmaAppletItem(const KPluginMetaData& info):
         m_local = dir.exists() && dir.isWritable();
     }
 
-    //attrs.insert("recommended", flags & Recommended ? true : false);
     setText(m_info.name() + " - "+ m_info.category().toLower());
 
     if (QIcon::hasThemeIcon(info.pluginId())) {
@@ -264,17 +263,19 @@ void PlasmaAppletItemModel::populateModel(const QStringList &whatChanged)
     }
 
     clear();
-    //qDebug() << "populating model, our application is" << m_application;
-
-    //qDebug() << "number of applets is"
-    //         <<  Plasma::Applet::listAppletInfo(QString(), m_application).count();
 
     auto filter = [this](const KPluginMetaData &plugin) -> bool {
 
-        const QString provides = plugin.value(QStringLiteral("X-Plasma-Provides"));
+        const QStringList provides = KPluginMetaData::readStringList(plugin.rawData(), QStringLiteral("X-Plasma-Provides"));
 
-        if (!m_provides.isEmpty() && !m_provides.contains(provides)) {
-            return false;
+        if (!m_provides.isEmpty()) {
+            const bool providesFulfilled = std::any_of(m_provides.cbegin(), m_provides.cend(), [&provides](const QString &p) {
+                return provides.contains(p);
+            });
+
+            if (!providesFulfilled) {
+                return false;
+            }
         }
 
         if (!plugin.isValid() || plugin.rawData().value(QStringLiteral("NoDisplay")).toBool() || plugin.category() == QLatin1String("Containments")) {
@@ -356,7 +357,6 @@ QSet<QString> PlasmaAppletItemModel::categories() const
 
 QMimeData *PlasmaAppletItemModel::mimeData(const QModelIndexList &indexes) const
 {
-    //qDebug() << "GETTING MIME DATA\n";
     if (indexes.count() <= 0) {
         return nullptr;
     }
