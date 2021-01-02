@@ -81,6 +81,12 @@ public:
      */
     Q_INVOKABLE bool isSystemTrayApplet(const QString &appletId);
 
+    /**
+     * @brief forwardPressedEvent Forwards MousePressed event to QtQick item
+     * @param receiver QtQick item that should receive MousePressed event
+     */
+    Q_INVOKABLE void forwardPressedEvent(QQuickItem *receiver, int button);
+
 private Q_SLOTS:
     //synchronizes with configuration and deletes not allowed applets
     void onEnabledAppletsChanged();

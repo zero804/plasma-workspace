@@ -40,18 +40,24 @@ AbstractItem {
             return
         }
         //forward click event to the applet
-        if (mouse.button === Qt.LeftButton || mouse.button === Qt.MidButton) {
-            const mouseArea = findMouseArea(applet.compactRepresentationItem)
-            if (mouseArea) {
+        const mouseArea = findMouseArea(applet.compactRepresentationItem)
+        if (mouseArea) {
+            if (mouseArea.acceptedButtons & mouse.button) {
                 mouseArea.clicked(mouse)
-            } else if (mouse.button === Qt.LeftButton) {//falback
-                applet.expanded = true
             }
+        } else if (mouse.button === Qt.LeftButton) {//falback
+            applet.expanded = true
         }
     }
     onPressed: {
         if (mouse.button === Qt.RightButton) {
             plasmoidContainer.contextMenu(mouse);
+        } else {
+            const mouseArea = findMouseArea(applet.compactRepresentationItem)
+            if (mouseArea) {
+                //can't call mouseArea.pressed(mouse), 'pressed' is a property (name clash)
+                plasmoid.nativeInterface.forwardPressedEvent(mouseArea, mouse.button, mouse.buttons);
+            }
         }
     }
     onContextMenu: {

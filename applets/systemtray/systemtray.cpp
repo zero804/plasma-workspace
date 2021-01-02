@@ -261,6 +261,23 @@ bool SystemTray::isSystemTrayApplet(const QString &appletId)
     return false;
 }
 
+void SystemTray::forwardPressedEvent(QQuickItem *receiver, int button)
+{
+    Qt::MouseButton buttonF = static_cast<Qt::MouseButton>(button);
+
+    //send the mouse button pressed event...
+    QMouseEvent mousePressEvent(QEvent::MouseButtonPress, QPointF(0, 0), buttonF, buttonF, Qt::KeyboardModifier::NoModifier);
+    QCoreApplication::sendEvent(receiver, &mousePressEvent);
+
+    //...and make sure it does no harm. Move outside of the item area and release the mouse button
+    QMouseEvent moveEvent(QEvent::MouseMove, QPointF(-1, -1), buttonF, buttonF, Qt::KeyboardModifier::NoModifier);
+    QCoreApplication::sendEvent(receiver, &moveEvent);
+    QHoverEvent hoverLeaveEvent(QEvent::HoverLeave, QPointF(-1, -1), QPointF(0, 0));
+    QCoreApplication::sendEvent(receiver, &hoverLeaveEvent);
+    QMouseEvent mouseReleaseEvent(QEvent::MouseButtonRelease, QPointF(-1, -1), buttonF, buttonF, Qt::KeyboardModifier::NoModifier);
+    QCoreApplication::sendEvent(receiver, &mouseReleaseEvent);
+}
+
 SystemTrayModel *SystemTray::systemTrayModel()
 {
     if (!m_systemTrayModel) {
