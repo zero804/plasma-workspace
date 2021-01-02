@@ -260,7 +260,11 @@ ColumnLayout {
                         keySequence: model.applet ? model.applet.globalShortcut : ""
                         onKeySequenceChanged: {
                             if (model.applet && keySequence !== model.applet.globalShortcut) {
-                                model.applet.globalShortcut = keySequence
+                                if (keySequence) {
+                                    model.applet.globalShortcut = keySequence
+                                } else {
+                                    model.applet.globalShortcut = ""
+                                }
 
                                 itemsList.keySequenceColumnWidth = Math.max(implicitWidth, itemsList.keySequenceColumnWidth)
                             }
