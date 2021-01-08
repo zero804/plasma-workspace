@@ -18,17 +18,11 @@ class KeyboardLayout : public QObject
 {
     Q_OBJECT
 
-    Q_PROPERTY(QString layoutDisplayName
-               MEMBER mLayoutDisplayName
-               NOTIFY layoutDisplayNameChanged)
+    Q_PROPERTY(QString layoutDisplayName MEMBER mLayoutDisplayName NOTIFY layoutDisplayNameChanged)
 
-    Q_PROPERTY(QString layoutLongName
-               MEMBER mLayoutLongName
-               NOTIFY layoutLongNameChanged)
+    Q_PROPERTY(QString layoutLongName MEMBER mLayoutLongName NOTIFY layoutLongNameChanged)
 
-    Q_PROPERTY(QStringList layouts
-               MEMBER mLayouts
-               NOTIFY layoutsChanged)
+    Q_PROPERTY(QStringList layouts MEMBER mLayouts NOTIFY layoutsChanged)
 
 public:
     explicit KeyboardLayout(QObject *parent = nullptr);
@@ -44,12 +38,10 @@ protected Q_SLOTS:
     void switchToPreviousLayout();
 
 private:
-    enum DBusData {LayoutDisplayName, LayoutLongName, Layouts};
+    enum DBusData { LayoutDisplayName, LayoutLongName, Layouts };
 
-    template<class T>
-    void requestDBusData(QDBusPendingReply<T> pendingReply, T &out, void (KeyboardLayout::*notify)());
-    template<DBusData>
-    inline void requestDBusData();
+    template<class T> void requestDBusData(QDBusPendingReply<T> pendingReply, T &out, void (KeyboardLayout::*notify)());
+    template<DBusData> inline void requestDBusData();
 
     QString mLayoutDisplayName;
     QString mLayoutLongName;

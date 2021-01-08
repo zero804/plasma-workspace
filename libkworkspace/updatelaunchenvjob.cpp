@@ -38,7 +38,6 @@ public:
 UpdateLaunchEnvJob::Private::Private(UpdateLaunchEnvJob *q)
     : q(q)
 {
-
 }
 
 void UpdateLaunchEnvJob::Private::monitorReply(const QDBusPendingReply<> &reply)
@@ -85,19 +84,14 @@ void UpdateLaunchEnvJob::start()
         const QString value = d->environment.value(varName);
 
         // KLauncher
-        org::kde::KLauncher klauncher(QStringLiteral("org.kde.klauncher5"),
-                                    QStringLiteral("/KLauncher"),
-                                    QDBusConnection::sessionBus());
+        org::kde::KLauncher klauncher(QStringLiteral("org.kde.klauncher5"), QStringLiteral("/KLauncher"), QDBusConnection::sessionBus());
         auto klauncherReply = klauncher.setLaunchEnv(varName, value);
         d->monitorReply(klauncherReply);
 
         // plasma-session
-        org::kde::Startup startup(QStringLiteral("org.kde.Startup"),
-                                QStringLiteral("/Startup"),
-                                QDBusConnection::sessionBus());
+        org::kde::Startup startup(QStringLiteral("org.kde.Startup"), QStringLiteral("/Startup"), QDBusConnection::sessionBus());
         auto startupReply = startup.updateLaunchEnv(varName, value);
         d->monitorReply(startupReply);
-
 
         // DBus-activation environment
         dbusActivationEnv.insert(varName, value);
@@ -126,11 +120,10 @@ void UpdateLaunchEnvJob::start()
 
     // _user_ systemd env
     QDBusMessage systemdActivationMsg = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.systemd1"),
-                                                                    QStringLiteral("/org/freedesktop/systemd1"),
-                                                                    QStringLiteral("org.freedesktop.systemd1.Manager"),
-                                                                    QStringLiteral("SetEnvironment"));
+                                                                       QStringLiteral("/org/freedesktop/systemd1"),
+                                                                       QStringLiteral("org.freedesktop.systemd1.Manager"),
+                                                                       QStringLiteral("SetEnvironment"));
     systemdActivationMsg.setArguments({systemdUpdates});
-
 
     auto systemdActivationReply = QDBusConnection::sessionBus().asyncCall(systemdActivationMsg);
     d->monitorReply(systemdActivationReply);

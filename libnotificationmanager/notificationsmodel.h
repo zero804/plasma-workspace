@@ -23,8 +23,8 @@
 
 #include "abstractnotificationsmodel.h"
 
-namespace NotificationManager {
-
+namespace NotificationManager
+{
 class NotificationsModel : public AbstractNotificationsModel
 {
 public:
