@@ -25,6 +25,10 @@ target_link_libraries(kcm_translations
     KF5::QuickAddons
 )
 
+if(HAVE_PACKAGEKIT)
+    target_link_libraries(kcm_translations PK::packagekitqt5)
+endif()
+
 kcoreaddons_desktop_to_json(kcm_translations "kcm_translations.desktop")
 
 ########### install files ###############

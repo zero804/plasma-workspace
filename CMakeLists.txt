@@ -151,6 +151,16 @@ if(${AppStreamQt_FOUND})
     set(HAVE_APPSTREAMQT true)
 endif()
 
+find_package(PackageKitQt5)
+set_package_properties(PackageKitQt5
+        PROPERTIES DESCRIPTION "Software Manager integration"
+        TYPE OPTIONAL
+        PURPOSE "Used to install additional language packages on demand"
+        )
+if(PackageKitQt5_FOUND)
+    set(HAVE_PACKAGEKIT TRUE)
+endif()
+
 # Fonts kcm and kfontinst
 find_package(Freetype)
 set_package_properties(Freetype PROPERTIES DESCRIPTION "A font rendering engine"
