@@ -595,7 +595,8 @@ void PanelView::resizePanel()
 
 void PanelView::restore()
 {
-    if (!containment()) {
+    KConfigGroup panelConfig = config();
+    if (!panelConfig.isValid()) {
         return;
     }
 
@@ -606,7 +607,7 @@ void PanelView::restore()
     //but if fails read it from the resolution dependent one as
     //the place for this config key is changed in Plasma 5.9
     //Do NOT use readConfigValueWithFallBack
-    setAlignment((Qt::Alignment)config().parent().readEntry<int>("alignment", config().readEntry<int>("alignment", m_alignment)));
+    setAlignment((Qt::Alignment)panelConfig.parent().readEntry<int>("alignment", panelConfig.readEntry<int>("alignment", m_alignment)));
 
     // All the other values are read from screen independent values,
     // but fallback on the screen independent section, as is the only place
@@ -814,7 +815,6 @@ void PanelView::moveEvent(QMoveEvent *ev)
 
 void PanelView::integrateScreen()
 {
-    connect(m_screenToFollow.data(), &QScreen::geometryChanged, this, &PanelView::restore);
     updateMask();
     KWindowSystem::setOnAllDesktops(winId(), true);
     KWindowSystem::setType(winId(), NET::Dock);
@@ -848,6 +848,21 @@ void PanelView::setScreenToFollow(QScreen *screen)
     if (!screen) {
         return;
     }
+
+    if (!m_screenToFollow.isNull()) {
+        // disconnect from old screen
+        disconnect(m_screenToFollow, &QScreen::virtualGeometryChanged,
+                this, &PanelView::updateStruts);
+        disconnect(m_screenToFollow, &QScreen::geometryChanged,
+                this, &PanelView::restore);
+    }
+
+    connect(screen, &QScreen::virtualGeometryChanged,
+            this, &PanelView::updateStruts,
+            Qt::UniqueConnection);
+    connect(screen, &QScreen::geometryChanged,
+            this, &PanelView::restore,
+            Qt::UniqueConnection);
 
     /*connect(screen, &QObject::destroyed, this, [this]() {
         if (PanelView::screen()) {

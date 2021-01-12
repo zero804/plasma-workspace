@@ -228,6 +228,9 @@ PlasmaCore.ColorScope {
             height: lockScreenRoot.height + units.gridUnit * 3
             focus: true //StackView is an implicit focus scope, so we need to give this focus so the item inside will have it
 
+            // this isn't implicit, otherwise items still get processed for the scenegraph
+            visible: opacity > 0
+
             initialItem: MainBlock {
                 id: mainBlock
                 lockScreenUiVisible: lockScreenRoot.uiVisible
