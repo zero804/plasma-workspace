@@ -64,7 +64,7 @@ ColumnLayout {
        return url;
    }
 
-    property alias iconContainerItem: jobDragIcon.parent
+    property alias iconContainerItem: jobDragIconItem.parent
 
     readonly property alias dragging: jobDragArea.dragging
     readonly property alias menuOpen: otherFileActionsMenu.visible
@@ -78,41 +78,61 @@ ColumnLayout {
 
     spacing: 0
 
+    Notifications.FileInfo {
+        id: fileInfo
+        url: jobItem.totalFiles === 1 && jobItem.url ? jobItem.url : ""
+    }
+
     // This item is parented to the NotificationItem iconContainer
-    PlasmaCore.IconItem {
-        id: jobDragIcon
+    Item {
+        id: jobDragIconItem
+        readonly property bool shown: jobDragIcon.valid
         width: parent ? parent.width : 0
         height: parent ? parent.height : 0
-        usesPlasmaTheme: false
-        visible: valid
-        active: jobDragArea.containsMouse
-        source: jobItem.totalFiles === 1 && jobItem.url ? plasmoid.nativeInterface.iconNameForUrl(jobItem.url) : ""
+        visible: shown
 
         Binding {
-            target: jobDragIcon.parent
+            target: jobDragIconItem.parent
             property: "visible"
             value: true
-            when: jobDragIcon.valid
+            when: jobDragIconItem.shown
             restoreMode: Binding.RestoreBinding
         }
 
-        DraggableFileArea {
-            id: jobDragArea
+        PlasmaCore.IconItem {
+            id: jobDragIcon
+
             anchors.fill: parent
+            usesPlasmaTheme: false
+            active: jobDragArea.containsMouse
+            opacity: busyIndicator.running ? 0.6 : 1
+            source: fileInfo.iconName
 
-            hoverEnabled: true
-            dragParent: jobDragIcon
-            dragUrl: jobItem.url || ""
-            dragPixmap: jobDragIcon.source
+            DraggableFileArea {
+                id: jobDragArea
+                anchors.fill: parent
 
-            onActivated: jobItem.openUrl(jobItem.url)
-            onContextMenuRequested: {
-                // avoid menu button glowing if we didn't actually press it
-                otherFileActionsButton.checked = false;
+                hoverEnabled: true
+                dragParent: jobDragIcon
+                dragUrl: jobItem.url || ""
+                dragPixmap: jobDragIcon.source
 
-                otherFileActionsMenu.visualParent = this;
-                otherFileActionsMenu.open(x, y);
+                onActivated: jobItem.openUrl(jobItem.url)
+                onContextMenuRequested: {
+                    // avoid menu button glowing if we didn't actually press it
+                    otherFileActionsButton.checked = false;
+
+                    otherFileActionsMenu.visualParent = this;
+                    otherFileActionsMenu.open(x, y);
+                }
             }
+        }
+
+        PlasmaComponents3.BusyIndicator {
+            id: busyIndicator
+            anchors.centerIn: parent
+            running: fileInfo.busy
+            visible: fileInfo.busy
         }
     }
 
@@ -183,13 +203,14 @@ ColumnLayout {
         }
     }
 
-    Flow { // it's a Flow so it can wrap if too long
+    Row {
+        id: jobActionsRow
         Layout.fillWidth: true
         spacing: units.smallSpacing
-        // We want the actions to be right-aligned but Flow also reverses
+        // We want the actions to be right-aligned but Row also reverses
         // the order of items, so we put them in reverse order
         layoutDirection: Qt.RightToLeft
-        visible: jobItem.url && jobItem.url.toString() !== ""
+        visible: jobItem.url && jobItem.url.toString() !== "" && !fileInfo.error
 
         PlasmaComponents3.Button {
             id: otherFileActionsButton
@@ -220,11 +241,37 @@ ColumnLayout {
 
         PlasmaComponents3.Button {
             id: openButton
+            width: Math.min(implicitWidth, jobItem.width - otherFileActionsButton.width - jobActionsRow.spacing)
             height: Math.max(implicitHeight, otherFileActionsButton.implicitHeight)
-            // would be nice to have the file icon here?
-            text: jobItem.jobDetails && jobItem.jobDetails.totalFiles > 1
-                    ? i18nd("plasma_applet_org.kde.plasma.notifications", "Open Containing Folder")
-                    : i18nd("plasma_applet_org.kde.plasma.notifications", "Open")
+            text: i18nd("plasma_applet_org.kde.plasma.notifications", "Open")
+
+            states: [
+                State {
+                    when: jobItem.jobDetails && jobItem.jobDetails.totalFiles > 1
+                    PropertyChanges {
+                        target: openButton
+                        text: i18nd("plasma_applet_org.kde.plasma.notifications", "Open Containing Folder")
+                        icon.name: "folder-open"
+                    }
+                },
+                State {
+                    when: fileInfo.preferredApplication.valid
+                    PropertyChanges {
+                        target: openButton
+                        text: i18nd("plasma_applet_org.kde.plasma.notifications", "Open with %1", fileInfo.preferredApplication.name)
+                        icon.name: fileInfo.preferredApplication.iconName
+                    }
+                },
+                State {
+                    when: !fileInfo.busy && !fileInfo.error
+                    PropertyChanges {
+                        target: openButton
+                        text: i18nd("plasma_applet_org.kde.plasma.notifications", "Open with...");
+                        icon.name: "system-run"
+                    }
+                }
+
+            ]
             onClicked: jobItem.openUrl(jobItem.url)
         }
     }
