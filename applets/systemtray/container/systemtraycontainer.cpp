@@ -120,7 +120,7 @@ void SystemTrayContainer::ensureSystrayExists()
 
     //Sync the display hints
     m_innerContainment->setContainmentDisplayHints(containmentDisplayHints() | Plasma::Types::ContainmentDrawsPlasmoidHeading | Plasma::Types::ContainmentForcesSquarePlasmoids);
-    connect(m_innerContainment, &Plasma::Containment::containmentDisplayHintsChanged, this,
+    connect(cont, &Plasma::Containment::containmentDisplayHintsChanged, this,
         [this]() {
             m_innerContainment->setContainmentDisplayHints(containmentDisplayHints() | Plasma::Types::ContainmentDrawsPlasmoidHeading | Plasma::Types::ContainmentForcesSquarePlasmoids);
         }
