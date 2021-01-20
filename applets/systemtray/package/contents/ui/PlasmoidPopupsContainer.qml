@@ -28,6 +28,7 @@ import org.kde.plasma.extras 2.0 as PlasmaExtras
 StackView {
     id: mainStack
     focus: true
+    clip: true
 
     Layout.minimumWidth: units.gridUnit * 12
     Layout.minimumHeight: units.gridUnit * 12
@@ -103,16 +104,26 @@ StackView {
                 PropertyAnimation {
                     target: enterItem
                     property: "x"
-                    from: transitioner.goingLeft ? enterItem.width : -enterItem.width
+                    from: root.vertical ? 0 : (transitioner.goingLeft ? enterItem.width : -enterItem.width)
                     to: 0
                     duration: units.longDuration
                 }
-                PropertyAnimation {
-                    target: enterItem
-                    property: "opacity"
-                    from: 0
-                    to: 1
-                    duration: units.longDuration
+                SequentialAnimation {
+                    PropertyAction {
+                        target: enterItem
+                        property: "opacity"
+                        value: 0
+                    }
+                    PauseAnimation {
+                        duration: root.vertical ? (units.longDuration/2) : 0
+                    }
+                    PropertyAnimation {
+                        target: enterItem
+                        property: "opacity"
+                        from: 0
+                        to: 1
+                        duration: (units.longDuration/2)
+                    }
                 }
             }
             ParallelAnimation {
@@ -120,7 +131,7 @@ StackView {
                     target: exitItem
                     property: "x"
                     from: 0
-                    to: transitioner.goingLeft ? -exitItem.width : exitItem.width
+                    to: root.vertical ? 0 : (transitioner.goingLeft ? -exitItem.width : exitItem.width)
                     duration: units.longDuration
                 }
                 PropertyAnimation {
