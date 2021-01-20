@@ -24,6 +24,7 @@ import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.kirigami 2.14 as Kirigami
 
 ContainmentLayoutManager.ResizeHandle {
+    id: handle
     width: overlay.touchInteraction ? PlasmaCore.Units.gridUnit * 2 : PlasmaCore.Units.gridUnit
     height: width
     z: 999
@@ -53,7 +54,7 @@ ContainmentLayoutManager.ResizeHandle {
             color: Qt.rgba(1, 1, 1, 0.1)
         }
         gradient: Gradient {
-            GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.1) }
+            GradientStop { position: 0.0; color: handle.pressed ? Qt.rgba(0, 0, 0, 0.1) : Qt.rgba(1, 1, 1, 0.1) }
             GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.1) }
         }
 
